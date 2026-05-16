@@ -7,7 +7,6 @@
     "CONTENTFUL_DELIVERY_TOKEN": "@contentful_delivery_token",
     "CONTENTFUL_PREVIEW_TOKEN": "@contentful_preview_token",
     "CONTENTFUL_ENVIRONMENT": "@contentful_environment",
-    "NEXTAUTH_SECRET": "@nextauth_secret",
-    "NEXTAUTH_URL": "@nextauth_url"
+    "NEXTAUTH_SECRET": "@nextauth_secret"
   }
 }

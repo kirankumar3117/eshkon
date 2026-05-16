@@ -3,6 +3,14 @@ import bcrypt from 'bcryptjs'
 import type { NextAuthOptions } from 'next-auth'
 import type { Role } from '@/types/page'
 
+// NextAuth reads NEXTAUTH_URL from process.env at request time.
+// On Vercel, NEXTAUTH_URL should be set to the production domain in the dashboard.
+// For preview deployments Vercel injects VERCEL_URL (host only, no protocol) —
+// we derive the full URL from it automatically so previews work without manual config.
+if (!process.env.NEXTAUTH_URL && process.env.VERCEL_URL) {
+  process.env.NEXTAUTH_URL = `https://${process.env.VERCEL_URL}`
+}
+
 interface SeedUser {
   id: string
   email: string
