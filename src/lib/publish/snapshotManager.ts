@@ -1,18 +1,21 @@
 /**
- * Snapshot Manager — reads and writes immutable versioned releases.
+ * Snapshot Manager — reads and writes immutable versioned releases via Contentful.
  *
- * File layout:  releases/<slug>/<version>.json
- * Each file:    { version: string, page: Page, publishedAt: string }
+ * Contentful content type "pageRelease":
+ *   - slug        (Short text)
+ *   - version     (Short text) — semver e.g. "1.0.0"
+ *   - data        (JSON object) — full serialised Page
+ *   - publishedAt (Short text) — ISO-8601 timestamp
  *
- * Snapshots are immutable: saveSnapshot throws if the target file already exists.
+ * Snapshots are immutable: saveSnapshot throws if the version already exists.
  */
-import { promises as fs } from 'fs'
-import path from 'path'
 import semver from 'semver'
 import type { Page } from '@/types/page'
 import { validatePage } from '@/schemas/pageSchema'
+import { getManagementClient } from '@/lib/contentful/contentfulClient'
 
-const RELEASES_DIR = path.join(process.cwd(), 'releases')
+const RELEASE_CONTENT_TYPE = 'pageRelease'
+const LOCALE = 'en-US'
 
 export interface Snapshot {
   version: string
@@ -20,15 +23,6 @@ export interface Snapshot {
   publishedAt: string
 }
 
-function slugDir(slug: string): string {
-  return path.join(RELEASES_DIR, slug)
-}
-
-function snapshotPath(slug: string, version: string): string {
-  return path.join(slugDir(slug), `${version}.json`)
-}
-
-// Stable comparison that normalises key ordering in plain objects.
 function sortedStringify(value: unknown): string {
   if (Array.isArray(value)) {
     return `[${value.map(sortedStringify).join(',')}]`
@@ -47,85 +41,78 @@ function isPageEqual(a: Page, b: Page): boolean {
   return sortedStringify(a) === sortedStringify(b)
 }
 
-/** Saves an immutable snapshot. Throws if the version file already exists. */
-export async function saveSnapshot(
-  slug: string,
-  version: string,
-  page: Page
-): Promise<void> {
-  await fs.mkdir(slugDir(slug), { recursive: true })
+async function getReleaseEntries(slug: string) {
+  const { client, spaceId, environmentId } = getManagementClient()
+  const result = await client.entry.getMany({
+    spaceId,
+    environmentId,
+    query: { content_type: RELEASE_CONTENT_TYPE, 'fields.slug': slug, limit: 1000 },
+  })
+  return { client, spaceId, environmentId, items: result.items }
+}
 
-  const filePath = snapshotPath(slug, version)
+/** Saves an immutable snapshot. Throws if the version already exists. */
+export async function saveSnapshot(slug: string, version: string, page: Page): Promise<void> {
+  const { client, spaceId, environmentId, items } = await getReleaseEntries(slug)
 
-  // Guard against overwrites — snapshots are immutable once written.
-  try {
-    await fs.access(filePath)
-    throw new Error(
-      `Snapshot v${version} for "${slug}" already exists and cannot be overwritten.`
-    )
-  } catch (err) {
-    // ENOENT means the file doesn't exist yet — that's what we want.
-    if ((err as NodeJS.ErrnoException).code !== 'ENOENT') throw err
+  const alreadyExists = items.some(
+    e => (e.fields.version as Record<string, string>)[LOCALE] === version
+  )
+  if (alreadyExists) {
+    throw new Error(`Snapshot v${version} for "${slug}" already exists and cannot be overwritten.`)
   }
 
-  const snapshot: Snapshot = {
-    version,
-    page,
-    publishedAt: new Date().toISOString(),
-  }
-
-  await fs.writeFile(filePath, JSON.stringify(snapshot, null, 2), 'utf-8')
+  await client.entry.create(
+    { spaceId, environmentId, contentTypeId: RELEASE_CONTENT_TYPE },
+    {
+      fields: {
+        slug: { [LOCALE]: slug },
+        version: { [LOCALE]: version },
+        data: { [LOCALE]: page },
+        publishedAt: { [LOCALE]: new Date().toISOString() },
+      },
+    }
+  )
 }
 
 /** Returns the highest-semver snapshot for a slug, or null if none exist. */
 export async function getLatestSnapshot(slug: string): Promise<Snapshot | null> {
-  let files: string[]
-  try {
-    files = await fs.readdir(slugDir(slug))
-  } catch {
-    // Directory doesn't exist yet — no snapshots published.
-    return null
-  }
+  const { items } = await getReleaseEntries(slug)
+  if (items.length === 0) return null
 
-  const validVersions = files
-    .filter(f => f.endsWith('.json'))
-    .map(f => f.replace(/\.json$/, ''))
+  const versions = items
+    .map(e => (e.fields.version as Record<string, string>)[LOCALE])
     .filter(v => semver.valid(v) !== null)
 
-  if (validVersions.length === 0) return null
+  if (versions.length === 0) return null
 
-  const latest = semver.maxSatisfying(validVersions, '*')
+  const latest = semver.maxSatisfying(versions, '*')
   if (!latest) return null
 
-  const raw = await fs.readFile(snapshotPath(slug, latest), 'utf-8')
-  const data = JSON.parse(raw) as Snapshot
+  const entry = items.find(
+    e => (e.fields.version as Record<string, string>)[LOCALE] === latest
+  )!
 
-  // Re-validate to catch any on-disk corruption.
-  return { version: data.version, page: validatePage(data.page), publishedAt: data.publishedAt }
+  return {
+    version: latest,
+    page: validatePage((entry.fields.data as Record<string, unknown>)[LOCALE]),
+    publishedAt: (entry.fields.publishedAt as Record<string, string>)[LOCALE],
+  }
 }
 
 /**
  * Returns true when any existing snapshot for the slug has page content
  * identical to the provided page (key-order-stable deep comparison).
- * Used as an idempotency guard before publishing.
  */
 export async function snapshotExists(slug: string, page: Page): Promise<boolean> {
-  let files: string[]
-  try {
-    files = await fs.readdir(slugDir(slug))
-  } catch {
-    return false
-  }
+  const { items } = await getReleaseEntries(slug)
 
-  const jsonFiles = files.filter(f => f.endsWith('.json'))
-
-  for (const file of jsonFiles) {
+  for (const entry of items) {
     try {
-      const raw = await fs.readFile(path.join(slugDir(slug), file), 'utf-8')
-      const data = JSON.parse(raw) as Snapshot
-      if (isPageEqual(data.page, page)) return true
+      const stored = validatePage((entry.fields.data as Record<string, unknown>)[LOCALE])
+      if (isPageEqual(stored, page)) return true
     } catch {
-      // Skip corrupted files.
+      // skip corrupted entries
     }
   }
 

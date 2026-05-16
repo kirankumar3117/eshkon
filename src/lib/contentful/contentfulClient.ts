@@ -13,8 +13,19 @@
  *     - id   (Short text)
  *     - type (Short text) — one of: hero | featureGrid | testimonial | cta
  *     - props (JSON object)
+ *
+ *   Content type "pageDraft":
+ *     - slug  (Short text, required)
+ *     - data  (JSON object, required) — full serialised Page
+ *
+ *   Content type "pageRelease":
+ *     - slug        (Short text, required)
+ *     - version     (Short text, required) — semver e.g. "1.0.0"
+ *     - data        (JSON object, required) — full serialised Page
+ *     - publishedAt (Short text, required) — ISO-8601 timestamp
  */
 import { createClient } from 'contentful'
+import { createClient as createManagementClient } from 'contentful-management'
 
 export class ContentfulError extends Error {
   constructor(
@@ -74,3 +85,19 @@ export function getClient(preview: boolean) {
 }
 
 export type ContentfulClient = ReturnType<typeof getClient>
+
+/** Returns the Contentful Management plain client plus space/environment IDs. */
+export function getManagementClient() {
+  const accessToken = process.env.CONTENTFUL_MANAGEMENT_TOKEN
+  const spaceId = process.env.CONTENTFUL_SPACE_ID
+  const environmentId = process.env.CONTENTFUL_ENVIRONMENT ?? 'master'
+
+  if (!accessToken || !spaceId) {
+    throw new ContentfulError(
+      'Missing required env vars: CONTENTFUL_SPACE_ID and CONTENTFUL_MANAGEMENT_TOKEN'
+    )
+  }
+
+  const client = createManagementClient({ accessToken })
+  return { client, spaceId, environmentId }
+}
