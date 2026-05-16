@@ -47,13 +47,13 @@ export default async function StudioPage({ params }: StudioPageProps) {
             role="alert"
             className="mx-auto max-w-lg rounded-md border border-blue-200 bg-blue-50 p-6"
           >
-            <h1 className="text-lg font-semibold text-blue-800">
+            <h1 className="text-lg font-semibold text-blue-900">
               Page not found in Contentful
             </h1>
-            <p className="mt-2 text-sm text-blue-700">
+            <p className="mt-2 text-sm text-blue-900">
               No page with slug <code className="font-mono bg-blue-100 px-1 rounded">{slug}</code> exists in your Contentful space.
             </p>
-            <p className="mt-2 text-xs text-blue-600">
+            <p className="mt-2 text-xs text-blue-900">
               Create a <strong>page</strong> entry in Contentful with <code className="font-mono">slug = &ldquo;{slug}&rdquo;</code> and then return here.
             </p>
           </div>
@@ -68,14 +68,14 @@ export default async function StudioPage({ params }: StudioPageProps) {
             role="alert"
             className="mx-auto max-w-lg rounded-md border border-amber-300 bg-amber-50 p-6"
           >
-            <h1 className="text-lg font-semibold text-amber-800">
+            <h1 className="text-lg font-semibold text-amber-900">
               Contentful API error
             </h1>
-            <p className="mt-2 text-sm text-amber-700">
+            <p className="mt-2 text-sm text-amber-900">
               {(err as ContentfulError).message}
             </p>
-            <p className="mt-2 text-xs text-amber-600">
-              Check your <code className="font-mono">CONTENTFUL_*</code> environment variables.
+            <p className="mt-2 text-xs text-amber-900">
+              Check your <code className="font-mono bg-amber-100 px-1 rounded">CONTENTFUL_*</code> environment variables.
             </p>
           </div>
         </main>

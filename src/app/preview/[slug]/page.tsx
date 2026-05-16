@@ -12,9 +12,9 @@ interface PreviewPageProps {
 function ErrorCard({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <main className="min-h-screen p-8" role="main">
-      <div role="alert" className="mx-auto max-w-2xl rounded-md border border-destructive/50 bg-destructive/10 p-6">
-        <h1 className="text-lg font-semibold text-destructive">{title}</h1>
-        <div className="mt-2 text-sm text-muted-foreground">{children}</div>
+      <div role="alert" className="mx-auto max-w-2xl rounded-md border border-red-300 bg-red-50 p-6">
+        <h1 className="text-lg font-semibold text-red-900">{title}</h1>
+        <div className="mt-2 text-sm text-red-900">{children}</div>
       </div>
     </main>
   )
