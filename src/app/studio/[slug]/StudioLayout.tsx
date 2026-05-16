@@ -273,22 +273,30 @@ type SaveStatus = 'idle' | 'saving' | 'saved' | 'error'
 function SaveDraftButton({ slug }: { slug: string }) {
   const draftPage = useAppSelector(s => s.draftPage.page)
   const [status, setStatus] = useState<SaveStatus>('idle')
+  const [errorMsg, setErrorMsg] = useState<string | null>(null)
 
   async function handleSave() {
     if (!draftPage || status === 'saving') return
     setStatus('saving')
+    setErrorMsg(null)
     try {
       const res = await fetch(`/api/draft/${slug}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(draftPage),
       })
-      setStatus(res.ok ? 'saved' : 'error')
-    } catch {
+      if (res.ok) {
+        setStatus('saved')
+      } else {
+        const data = await res.json().catch(() => ({})) as { error?: string }
+        setErrorMsg(data.error ?? `HTTP ${res.status}`)
+        setStatus('error')
+      }
+    } catch (err) {
+      setErrorMsg(err instanceof Error ? err.message : 'Network error')
       setStatus('error')
     }
-    // Reset to idle after 3s so the button is ready again
-    setTimeout(() => setStatus('idle'), 3000)
+    setTimeout(() => setStatus('idle'), 5000)
   }
 
   const icons = {
@@ -298,29 +306,29 @@ function SaveDraftButton({ slug }: { slug: string }) {
     error: <AlertCircle size={14} className="text-destructive" />,
   }
 
-  const labels = {
-    idle: 'Save Draft',
-    saving: 'Saving…',
-    saved: 'Saved',
-    error: 'Failed',
-  }
-
   return (
-    <Button
-      variant="outline"
-      size="sm"
-      onClick={handleSave}
-      disabled={status === 'saving'}
-      className={[
-        'gap-1.5 min-w-[100px]',
-        status === 'saved' ? 'border-green-400 text-green-700' : '',
-        status === 'error' ? 'border-destructive text-destructive' : '',
-      ].join(' ')}
-      aria-label={labels[status]}
-    >
-      {icons[status]}
-      {labels[status]}
-    </Button>
+    <div className="flex flex-col items-end gap-1">
+      <Button
+        variant="outline"
+        size="sm"
+        onClick={handleSave}
+        disabled={status === 'saving'}
+        className={[
+          'gap-1.5 min-w-[100px]',
+          status === 'saved' ? 'border-green-400 text-green-700' : '',
+          status === 'error' ? 'border-destructive text-destructive' : '',
+        ].join(' ')}
+        aria-label={status === 'saving' ? 'Saving…' : status === 'saved' ? 'Saved' : status === 'error' ? 'Save failed' : 'Save Draft'}
+      >
+        {icons[status]}
+        {status === 'idle' ? 'Save Draft' : status === 'saving' ? 'Saving…' : status === 'saved' ? 'Saved' : 'Failed'}
+      </Button>
+      {status === 'error' && errorMsg && (
+        <p role="alert" className="text-xs text-destructive max-w-[200px] text-right leading-snug">
+          {errorMsg}
+        </p>
+      )}
+    </div>
   )
 }
 
