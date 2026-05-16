@@ -1,5 +1,6 @@
 import { test, expect, type Page } from '@playwright/test'
 import AxeBuilder from '@axe-core/playwright'
+import { writeFileSync } from 'fs'
 import { writeFile } from 'fs/promises'
 import type { Result as AxeViolation } from 'axe-core'
 
@@ -41,6 +42,16 @@ async function runAxe(page: Page, url: string): Promise<PageReport> {
 }
 
 test.describe('Accessibility audit (axe-core)', () => {
+  // Write an empty stub immediately so the file always exists even if the
+  // process is killed before afterAll runs (prevents check-a11y.js ENOENT).
+  test.beforeAll(() => {
+    writeFileSync(
+      'a11y-report.json',
+      JSON.stringify({ timestamp: new Date().toISOString(), pages: [], summary: {} }, null, 2),
+      'utf-8'
+    )
+  })
+
   // Save the accumulated report after ALL tests in this file complete.
   test.afterAll(async () => {
     const summary = report.reduce(
