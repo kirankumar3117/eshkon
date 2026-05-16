@@ -21,6 +21,9 @@ export function PublishButton({ slug, role }: PublishButtonProps) {
   const status = useAppSelector(s => s.publish.status)
   const lastVersion = useAppSelector(s => s.publish.lastVersion)
   const changelog = useAppSelector(s => s.publish.changelog)
+  const publishError = useAppSelector(s => s.publish.error)
+  // Send the current draft page so the API publishes exactly what the user edited.
+  const draftPage = useAppSelector(s => s.draftPage.page)
 
   const canPublish = role === 'publisher'
   const isPublishing = status === 'publishing'
@@ -33,13 +36,14 @@ export function PublishButton({ slug, role }: PublishButtonProps) {
       const res = await fetch('/api/publish', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ slug }),
+        body: JSON.stringify({ slug, page: draftPage }),
       })
 
       const data = (await res.json()) as {
         version?: string
-        changelog?: string
+        changelog?: string[]
         error?: string
+        idempotent?: boolean
       }
 
       if (!res.ok) {
@@ -49,8 +53,10 @@ export function PublishButton({ slug, role }: PublishButtonProps) {
 
       dispatch(
         publishSuccess({
-          version: data.version ?? '0.0.1',
-          changelog: data.changelog ?? '',
+          version: data.version ?? '1.0.0',
+          changelog: data.idempotent
+            ? 'Already up to date — no changes to publish.'
+            : (data.changelog ?? []).join('\n'),
         })
       )
     } catch {
@@ -108,7 +114,7 @@ export function PublishButton({ slug, role }: PublishButtonProps) {
           className="text-xs text-destructive"
           aria-live="assertive"
         >
-          {useAppSelector(s => s.publish.error)}
+          {publishError}
         </p>
       )}
     </div>
