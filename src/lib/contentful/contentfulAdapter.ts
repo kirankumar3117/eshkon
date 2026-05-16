@@ -9,7 +9,20 @@ interface RawSectionFields {
 }
 
 interface ResolvedEntry {
+  sys?: {
+    id?: string
+    contentType?: {
+      sys?: {
+        id?: string
+      }
+    }
+  }
   fields: Record<string, unknown>
+}
+
+type RichTextNode = {
+  nodeType?: string
+  content?: { value?: string; content?: { value?: string }[] }[]
 }
 
 function isResolvedEntry(value: unknown): value is ResolvedEntry {
@@ -31,7 +44,7 @@ function mapSection(raw: unknown, index: number): RawSectionFields {
   }
 
   const fields = raw.fields
-  const sys = (raw as any).sys || {}
+  const sys = raw.sys || {}
   const contentTypeId = sys.contentType?.sys?.id
 
   // If it's matching the strict sprint brief schema:
@@ -51,7 +64,7 @@ function mapSection(raw: unknown, index: number): RawSectionFields {
     type = 'hero'
     
     // Safely extract text from Contentful Rich Text
-    const bodyTextNodes = (fields['bodyText'] as any)?.content || []
+    const bodyTextNodes = (fields['bodyText'] as { content?: RichTextNode[] })?.content || []
     let subheading = 'Click to edit subtitle'
     for (const node of bodyTextNodes) {
       if (node.nodeType === 'paragraph' && node.content?.[0]?.value) {
@@ -69,7 +82,7 @@ function mapSection(raw: unknown, index: number): RawSectionFields {
   } else if (contentTypeId === 'componentQuote') {
     type = 'testimonial'
     
-    const quoteNodes = (fields['quote'] as any)?.content || []
+    const quoteNodes = (fields['quote'] as { content?: RichTextNode[] })?.content || []
     let quoteText = 'Great product!'
     let authorText = 'Happy Customer'
     
@@ -131,7 +144,7 @@ export async function fetchPage(slug: string, preview = false): Promise<Page> {
 
   // Each field is mapped explicitly; no spreading of raw entry data.
   const mappedPage = {
-    pageId: (fields['pageId'] || fields['internalName'] || (entry as any).sys?.id) as string,
+    pageId: (fields['pageId'] || fields['internalName'] || (entry as { sys?: { id?: string } }).sys?.id) as string,
     slug: fields['slug'],
     title: (fields['title'] || fields['pageName'] || 'Untitled Page') as string,
     sections: rawSections.map(mapSection),

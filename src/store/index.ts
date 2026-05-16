@@ -22,9 +22,9 @@ import type { Storage } from 'redux-persist'
 function makeStorage(): Storage {
   if (typeof window === 'undefined') {
     return {
-      getItem: (_key: string) => Promise.resolve(null),
-      setItem: (_key: string, _value: string) => Promise.resolve(),
-      removeItem: (_key: string) => Promise.resolve(),
+      getItem: () => Promise.resolve(null),
+      setItem: () => Promise.resolve(),
+      removeItem: () => Promise.resolve(),
     }
   }
   return {
