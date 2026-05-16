@@ -32,23 +32,6 @@
         "ctaLabel": "Learn More",
         "ctaUrl": "/login"
       }
-    },
-    {
-      "id": "Rich testimonial #6 / Customer service",
-      "type": "testimonial",
-      "props": {
-        "quote": "I can't recommend Coin enough. If you’re tired of having to deal with unfriendly bank staff, long lines and ungodly opening hours, this is the bank for you.",
-        "author": "Megan Trejo",
-        "role": "Customer"
-      }
-    },
-    {
-      "id": "section-1778962080736-2rb46",
-      "type": "testimonial",
-      "props": {
-        "quote": "Enter testimonial quote here",
-        "author": "Author Name"
-      }
     }
   ]
 }
