@@ -22,12 +22,7 @@ function HeroEditor({ section }: { section: Extract<Section, { type: 'hero' }> }
   const { heading, subheading, ctaLabel, ctaUrl } = section.props
 
   function update(field: keyof HeroProps, value: string) {
-    dispatch(
-      updateSectionProps({
-        sectionId: section.id,
-        props: { ...section.props, [field]: value },
-      })
-    )
+    dispatch(updateSectionProps({ sectionId: section.id, props: { ...section.props, [field]: value } }))
   }
 
   return (
@@ -72,99 +67,53 @@ function HeroEditor({ section }: { section: Extract<Section, { type: 'hero' }> }
   )
 }
 
-function TestimonialEditor({
-  section,
-}: {
-  section: Extract<Section, { type: 'testimonial' }>
-}) {
+function TestimonialEditor({ section }: { section: Extract<Section, { type: 'testimonial' }> }) {
   const dispatch = useAppDispatch()
   const { quote, author, role, avatarUrl } = section.props
 
   function update(field: keyof TestimonialProps, value: string) {
-    dispatch(
-      updateSectionProps({
-        sectionId: section.id,
-        props: { ...section.props, [field]: value },
-      })
-    )
+    dispatch(updateSectionProps({ sectionId: section.id, props: { ...section.props, [field]: value } }))
   }
 
   return (
     <div className="grid gap-4">
       <div className="grid gap-1.5">
         <Label htmlFor={`${section.id}-quote`}>Quote</Label>
-        <Input
-          id={`${section.id}-quote`}
-          value={quote}
-          onChange={e => update('quote', e.target.value)}
-          aria-required="true"
-        />
+        <Input id={`${section.id}-quote`} value={quote} onChange={e => update('quote', e.target.value)} aria-required="true" />
       </div>
       <div className="grid gap-1.5">
         <Label htmlFor={`${section.id}-author`}>Author</Label>
-        <Input
-          id={`${section.id}-author`}
-          value={author}
-          onChange={e => update('author', e.target.value)}
-          aria-required="true"
-        />
+        <Input id={`${section.id}-author`} value={author} onChange={e => update('author', e.target.value)} aria-required="true" />
       </div>
       <div className="grid gap-1.5">
-        <Label htmlFor={`${section.id}-role`}>Role (optional)</Label>
-        <Input
-          id={`${section.id}-role`}
-          value={role ?? ''}
-          onChange={e => update('role', e.target.value)}
-        />
+        <Label htmlFor={`${section.id}-role`}>Role <span className="text-muted-foreground text-xs">(optional)</span></Label>
+        <Input id={`${section.id}-role`} value={role ?? ''} onChange={e => update('role', e.target.value)} />
       </div>
       <div className="grid gap-1.5">
-        <Label htmlFor={`${section.id}-avatarUrl`}>Avatar URL (optional)</Label>
-        <Input
-          id={`${section.id}-avatarUrl`}
-          value={avatarUrl ?? ''}
-          onChange={e => update('avatarUrl', e.target.value)}
-        />
+        <Label htmlFor={`${section.id}-avatarUrl`}>Avatar URL <span className="text-muted-foreground text-xs">(optional)</span></Label>
+        <Input id={`${section.id}-avatarUrl`} value={avatarUrl ?? ''} onChange={e => update('avatarUrl', e.target.value)} />
       </div>
     </div>
   )
 }
 
-function CtaEditor({
-  section,
-}: {
-  section: Extract<Section, { type: 'cta' }>
-}) {
+function CtaEditor({ section }: { section: Extract<Section, { type: 'cta' }> }) {
   const dispatch = useAppDispatch()
   const { label, url } = section.props
 
   function update(field: keyof CtaProps, value: string) {
-    dispatch(
-      updateSectionProps({
-        sectionId: section.id,
-        props: { ...section.props, [field]: value },
-      })
-    )
+    dispatch(updateSectionProps({ sectionId: section.id, props: { ...section.props, [field]: value } }))
   }
 
   return (
     <div className="grid gap-4">
       <div className="grid gap-1.5">
         <Label htmlFor={`${section.id}-label`}>Label</Label>
-        <Input
-          id={`${section.id}-label`}
-          value={label}
-          onChange={e => update('label', e.target.value)}
-          aria-required="true"
-        />
+        <Input id={`${section.id}-label`} value={label} onChange={e => update('label', e.target.value)} aria-required="true" />
       </div>
       <div className="grid gap-1.5">
         <Label htmlFor={`${section.id}-url`}>URL</Label>
-        <Input
-          id={`${section.id}-url`}
-          value={url}
-          onChange={e => update('url', e.target.value)}
-          aria-required="true"
-        />
+        <Input id={`${section.id}-url`} value={url} onChange={e => update('url', e.target.value)} aria-required="true" />
       </div>
     </div>
   )
@@ -184,28 +133,57 @@ export function StudioPanel() {
   const section = useAppSelector(s =>
     s.draftPage.page?.sections.find(sec => sec.id === selectedSectionId)
   )
-  const firstInputRef = useRef<HTMLInputElement | null>(null)
 
-  // Move focus to first input when a new section is selected
+  // Ref to the aside container — used for programmatic focus management.
+  const panelRef = useRef<HTMLElement | null>(null)
+  // Stores the element that triggered the panel to open so we can return focus on close.
+  const triggerRef = useRef<HTMLElement | null>(null)
+
   useEffect(() => {
     if (section) {
-      firstInputRef.current?.focus()
+      // Capture the currently focused element as the return-focus target.
+      triggerRef.current = document.activeElement as HTMLElement
+
+      // Move focus to the first interactive element inside the panel.
+      const timer = setTimeout(() => {
+        const first = panelRef.current?.querySelector<HTMLElement>(
+          'input:not([disabled]), button:not([disabled]), [href], select, textarea'
+        )
+        first?.focus()
+      }, 50)
+
+      return () => clearTimeout(timer)
     }
+  // Only run when the selected section changes (not on every re-render).
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [section?.id])
 
   function handleClose() {
     dispatch(selectSection(null))
+    // Return focus to the element that opened the panel.
+    requestAnimationFrame(() => {
+      if (triggerRef.current && document.contains(triggerRef.current)) {
+        triggerRef.current.focus()
+      } else {
+        // Fallback: focus the "Add Section" button which is always in the DOM.
+        document
+          .querySelector<HTMLElement>('button[aria-haspopup="menu"]')
+          ?.focus()
+      }
+      triggerRef.current = null
+    })
   }
 
   if (!section) return null
 
   return (
     <aside
+      ref={panelRef as React.RefObject<HTMLElement>}
       aria-label="Section properties"
       className="w-80 shrink-0 border-l bg-background overflow-y-auto flex flex-col"
     >
       <div className="flex items-center justify-between p-4 border-b">
-        <h2 className="text-sm font-semibold">
+        <h2 className="text-sm font-semibold" id="panel-heading">
           {SECTION_LABELS[section.type] ?? section.type}
         </h2>
         <Button
@@ -214,33 +192,28 @@ export function StudioPanel() {
           onClick={handleClose}
           aria-label="Close properties panel"
         >
-          ✕
+          <span aria-hidden="true">✕</span>
         </Button>
       </div>
 
-      <div className="p-4 flex-1">
-        {section.type === 'hero' && (
-          <HeroEditor section={section} />
-        )}
-        {section.type === 'testimonial' && (
-          <TestimonialEditor section={section} />
-        )}
-        {section.type === 'cta' && (
-          <CtaEditor section={section} />
-        )}
-        {section.type === 'featureGrid' && (
-          <FeatureGridEditor />
-        )}
+      <div
+        className="p-4 flex-1"
+        role="form"
+        aria-labelledby="panel-heading"
+      >
+        {section.type === 'hero' && <HeroEditor section={section} />}
+        {section.type === 'testimonial' && <TestimonialEditor section={section} />}
+        {section.type === 'cta' && <CtaEditor section={section} />}
+        {section.type === 'featureGrid' && <FeatureGridEditor />}
       </div>
 
       <Separator />
       <div className="p-4">
         <p className="text-xs text-muted-foreground">
-          Section ID: <code className="font-mono">{section.id}</code>
+          Section ID:{' '}
+          <code className="font-mono bg-muted px-1 rounded">{section.id}</code>
         </p>
       </div>
     </aside>
   )
 }
-
-

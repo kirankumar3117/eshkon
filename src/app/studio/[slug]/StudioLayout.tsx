@@ -219,7 +219,7 @@ function AddSectionMenu() {
               key={type}
               role="menuitem"
               onClick={() => handleAdd(type)}
-              className="w-full text-left px-3 py-2 text-sm hover:bg-accent focus-visible:outline-none focus-visible:bg-accent"
+              className="w-full text-left px-3 py-2 text-sm hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset"
             >
               {SECTION_TYPE_LABELS[type]}
             </button>
@@ -239,6 +239,7 @@ export function StudioLayout({ role }: StudioLayoutProps) {
   const page = useAppSelector(s => s.draftPage.page)
   const isDirty = useAppSelector(s => s.draftPage.isDirty)
   const previewMode = useAppSelector(s => s.ui.previewMode)
+  const sectionCount = useAppSelector(s => s.draftPage.page?.sections.length ?? 0)
 
   if (!page) {
     return (
@@ -316,6 +317,18 @@ export function StudioLayout({ role }: StudioLayoutProps) {
 
       {/* ── Main 3-panel layout ──────────────────────────── */}
       <div className="flex flex-1 overflow-hidden">
+        {/* Live region: announces section additions/removals to screen readers */}
+        <div
+          role="status"
+          aria-live="polite"
+          aria-atomic="true"
+          className="sr-only"
+        >
+          {sectionCount === 0
+            ? 'No sections'
+            : `${sectionCount} section${sectionCount === 1 ? '' : 's'}`}
+        </div>
+
         {/* Left — Section list */}
         <aside
           aria-label="Page sections"

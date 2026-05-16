@@ -77,6 +77,7 @@ export default function LoginPage() {
                   autoComplete="current-password"
                   required
                   aria-required="true"
+                  aria-describedby={error ? 'login-error' : undefined}
                   value={password}
                   onChange={e => setPassword(e.target.value)}
                 />

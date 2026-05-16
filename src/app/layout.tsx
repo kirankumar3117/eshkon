@@ -15,6 +15,10 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body>
+        {/* WCAG 2.2: Skip navigation — first focusable element on every page */}
+        <a href="#main-content" className="skip-link">
+          Skip to main content
+        </a>
         <SessionProvider>{children}</SessionProvider>
       </body>
     </html>
