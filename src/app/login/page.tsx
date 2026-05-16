@@ -1,15 +1,22 @@
 'use client'
 
 import { useState } from 'react'
-import { signIn } from 'next-auth/react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+} from '@/components/ui/card'
 
 export default function LoginPage() {
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const callbackUrl = searchParams.get('callbackUrl') ?? '/'
+
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
@@ -20,21 +27,43 @@ export default function LoginPage() {
     setError(null)
     setLoading(true)
 
-    const result = await signIn('credentials', {
-      email,
-      password,
-      redirect: false,
-    })
+    try {
+      // Step 1: Fetch the CSRF token (NextAuth requires it for the credentials POST).
+      // The browser automatically stores the matching cookie — we just need the token value.
+      const csrfRes = await fetch('/api/auth/csrf')
+      const { csrfToken } = (await csrfRes.json()) as { csrfToken: string }
 
-    setLoading(false)
+      // Step 2: POST credentials. The browser sends the CSRF cookie automatically,
+      // and we include the matching token value in the body — that's all NextAuth needs.
+      const res = await fetch('/api/auth/callback/credentials', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: new URLSearchParams({
+          email,
+          password,
+          csrfToken,
+          callbackUrl,
+          json: 'true',
+        }),
+      })
 
-    if (result?.error) {
-      setError('Invalid email or password.')
-      return
+      const data = (await res.json()) as { url?: string }
+
+      // NextAuth signals failure by returning a URL under /api/auth/ (e.g. /api/auth/error?…)
+      // A successful login returns the callbackUrl (e.g. http://localhost:3000/)
+      if (!data.url || data.url.includes('/api/auth/')) {
+        setError('Invalid email or password.')
+        setLoading(false)
+        return
+      }
+
+      // Success — navigate to wherever the user was trying to go
+      router.push(callbackUrl)
+      router.refresh()
+    } catch {
+      setError('Could not reach the authentication server. Is the app running?')
+      setLoading(false)
     }
-
-    router.push('/')
-    router.refresh()
   }
 
   return (
@@ -44,9 +73,7 @@ export default function LoginPage() {
     >
       <Card className="w-full max-w-sm">
         <CardHeader>
-          <CardTitle>
-            <h1 className="text-2xl font-bold">Sign In</h1>
-          </CardTitle>
+          <h1 className="text-2xl font-bold tracking-tight">Sign In</h1>
           <CardDescription>
             Enter your credentials to access Page Studio.
           </CardDescription>
@@ -100,7 +127,9 @@ export default function LoginPage() {
           </form>
 
           <p className="mt-4 text-xs text-muted-foreground text-center">
-            Test accounts: viewer@test.com · editor@test.com · publisher@test.com
+            viewer@test.com · editor@test.com · publisher@test.com
+            <br />
+            Passwords: viewer123 · editor123 · publisher123
           </p>
         </CardContent>
       </Card>

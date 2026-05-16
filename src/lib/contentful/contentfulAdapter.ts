@@ -1,21 +1,13 @@
-/**
- * Maps raw Contentful API responses to our domain Page type.
- * Only imports from contentfulClient — never from 'contentful' directly.
- */
 import type { Page } from '@/types/page'
 import { validatePage } from '@/schemas/pageSchema'
 import { getClient, ContentfulError } from './contentfulClient'
 
-// Shape of a resolved Contentful section entry's fields.
-// Matches the "section" content type in Contentful.
 interface RawSectionFields {
   id: unknown
   type: unknown
   props: unknown
 }
 
-// A resolved Contentful entry always has a `fields` property.
-// Unresolved links (sys.type === 'Link') lack `fields` entirely.
 interface ResolvedEntry {
   fields: Record<string, unknown>
 }
@@ -38,21 +30,70 @@ function mapSection(raw: unknown, index: number): RawSectionFields {
     )
   }
 
-  // Explicitly map each field — no spreading of raw data.
+  const fields = raw.fields
+  const sys = (raw as any).sys || {}
+  const contentTypeId = sys.contentType?.sys?.id
+
+  // If it's matching the strict sprint brief schema:
+  if (fields['type']) {
+    return {
+      id: fields['id'] || sys.id,
+      type: fields['type'],
+      props: fields['props'] ?? {},
+    }
+  }
+
+  // Otherwise, smartly adapt the user's Contentful template structure:
+  let type = 'unknown'
+  let props: Record<string, unknown> = {}
+
+  if (contentTypeId === 'componentHeroBanner' || contentTypeId === 'componentDuplex') {
+    type = 'hero'
+    
+    // Safely extract text from Contentful Rich Text
+    const bodyTextNodes = (fields['bodyText'] as any)?.content || []
+    let subheading = 'Click to edit subtitle'
+    for (const node of bodyTextNodes) {
+      if (node.nodeType === 'paragraph' && node.content?.[0]?.value) {
+        subheading = node.content[0].value
+        break
+      }
+    }
+
+    props = {
+      heading: fields['headline'] || fields['internalName'] || 'Welcome',
+      subheading: subheading,
+      ctaLabel: 'Learn More',
+      ctaUrl: '/login',
+    }
+  } else if (contentTypeId === 'componentQuote') {
+    type = 'testimonial'
+    
+    const quoteNodes = (fields['quote'] as any)?.content || []
+    let quoteText = 'Great product!'
+    let authorText = 'Happy Customer'
+    
+    if (quoteNodes.length > 0 && quoteNodes[0].content?.[0]?.content?.[0]?.value) {
+      quoteText = quoteNodes[0].content[0].content[0].value
+    }
+    if (quoteNodes.length > 1 && quoteNodes[1].content?.[1]?.value) {
+      authorText = quoteNodes[1].content[1].value
+    }
+
+    props = {
+      quote: quoteText,
+      author: authorText,
+      role: 'Customer',
+    }
+  }
+
   return {
-    id: raw.fields['id'],
-    type: raw.fields['type'],
-    props: raw.fields['props'] ?? {},
+    id: fields['internalName'] || sys.id || `section-${index}`,
+    type: type,
+    props: props,
   }
 }
 
-/**
- * Fetches a page by slug from Contentful, maps the raw entry to the Page
- * domain type, and validates it through Zod before returning.
- *
- * Throws ContentfulError for network/API failures and PageValidationError
- * (from validatePage) if the Contentful data does not match the schema.
- */
 export async function fetchPage(slug: string, preview = false): Promise<Page> {
   const client = getClient(preview)
 
@@ -61,7 +102,7 @@ export async function fetchPage(slug: string, preview = false): Promise<Page> {
     response = await client.getEntries({
       content_type: 'page',
       'fields.slug': slug,
-      include: 2, // depth 2 ensures sections are fully resolved
+      include: 2,
       limit: 1,
     } as Parameters<typeof client.getEntries>[0])
   } catch (err) {
@@ -77,21 +118,24 @@ export async function fetchPage(slug: string, preview = false): Promise<Page> {
   }
 
   const entry = response.items[0]
-  // Cast to a plain field map — Zod validates the shape below.
   const fields = entry.fields as Record<string, unknown>
 
-  const rawSections = Array.isArray(fields['sections'])
-    ? (fields['sections'] as unknown[])
-    : []
+  // Dynamically adapt arrays if the user is using standard Contentful templates
+  let rawSections: unknown[] = []
+  if (Array.isArray(fields['sections'])) {
+    rawSections = fields['sections']
+  } else {
+    if (Array.isArray(fields['topSection'])) rawSections.push(...fields['topSection'])
+    if (Array.isArray(fields['extraSection'])) rawSections.push(...fields['extraSection'])
+  }
 
   // Each field is mapped explicitly; no spreading of raw entry data.
   const mappedPage = {
-    pageId: fields['pageId'],
+    pageId: (fields['pageId'] || fields['internalName'] || (entry as any).sys?.id) as string,
     slug: fields['slug'],
-    title: fields['title'],
+    title: (fields['title'] || fields['pageName'] || 'Untitled Page') as string,
     sections: rawSections.map(mapSection),
   }
 
-  // validatePage throws PageValidationError on invalid data.
   return validatePage(mappedPage)
 }

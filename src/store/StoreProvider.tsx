@@ -1,6 +1,6 @@
 'use client'
 
-import { useRef } from 'react'
+import { useRef, useState, useEffect } from 'react'
 import { Provider } from 'react-redux'
 import { PersistGate } from 'redux-persist/integration/react'
 import { makeStore } from './index'
@@ -11,15 +11,24 @@ interface StoreProviderProps {
 }
 
 export function StoreProvider({ children }: StoreProviderProps) {
-  // Use a ref so we only create the store once per component lifetime,
-  // even in React StrictMode (which double-invokes effects).
   const storeRef = useRef<ReturnType<typeof makeStore> | null>(null)
+  const [mounted, setMounted] = useState(false)
 
   if (storeRef.current === null) {
     storeRef.current = makeStore()
   }
 
+  useEffect(() => {
+    setMounted(true)
+  }, [])
+
   const { store, persistor } = storeRef.current
+
+  // During SSR and initial hydration, render children without PersistGate
+  // to ensure the client HTML matches the server HTML.
+  if (!mounted) {
+    return <Provider store={store as AppStore}>{children}</Provider>
+  }
 
   return (
     <Provider store={store as AppStore}>

@@ -1,10 +1,18 @@
 'use client'
 
 import { useState } from 'react'
-import { GripVertical, Trash2, ChevronUp, ChevronDown, Monitor, Smartphone, Plus } from 'lucide-react'
+import {
+  GripVertical, Trash2, ChevronUp, ChevronDown,
+  Monitor, Smartphone, Plus, Save, Check, AlertCircle,
+  LayoutTemplate, Quote, MousePointerClick, Grid2X2,
+  type LucideIcon,
+} from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription,
+} from '@/components/ui/dialog'
 import { SectionErrorBoundary } from '@/components/sections/SectionErrorBoundary'
 import { UnsupportedSection } from '@/components/sections/UnsupportedSection'
 import { renderSection } from '@/lib/registry/sectionRegistry'
@@ -19,11 +27,43 @@ import {
 import { selectSection, setPreviewMode } from '@/store/slices/uiSlice'
 import type { Section, SectionType, Role } from '@/types/page'
 
-const SECTION_TYPE_LABELS: Record<SectionType, string> = {
-  hero: 'Hero',
-  featureGrid: 'Feature Grid',
-  testimonial: 'Testimonial',
-  cta: 'Call to Action',
+// ── Section type metadata ──────────────────────────────────────────────────
+
+const SECTION_META: Record<SectionType, {
+  label: string
+  description: string
+  color: string
+  dot: string
+  Icon: LucideIcon
+}> = {
+  hero: {
+    label: 'Hero',
+    description: 'Full-width banner with headline, sub-text and a CTA button.',
+    color: 'bg-blue-50 border-blue-200 hover:border-blue-400',
+    dot: 'bg-blue-500',
+    Icon: LayoutTemplate,
+  },
+  featureGrid: {
+    label: 'Feature Grid',
+    description: 'Grid of feature cards with title and description.',
+    color: 'bg-purple-50 border-purple-200 hover:border-purple-400',
+    dot: 'bg-purple-500',
+    Icon: Grid2X2,
+  },
+  testimonial: {
+    label: 'Testimonial',
+    description: 'Pull-quote with author name, role, and avatar.',
+    color: 'bg-green-50 border-green-200 hover:border-green-400',
+    dot: 'bg-green-500',
+    Icon: Quote,
+  },
+  cta: {
+    label: 'Call to Action',
+    description: 'Prominent button or link to drive conversions.',
+    color: 'bg-orange-50 border-orange-200 hover:border-orange-400',
+    dot: 'bg-orange-500',
+    Icon: MousePointerClick,
+  },
 }
 
 const SECTION_TYPES: SectionType[] = ['hero', 'featureGrid', 'testimonial', 'cta']
@@ -45,13 +85,15 @@ const DEFAULT_PROPS: Record<SectionType, Record<string, unknown>> = {
   cta: {
     label: 'Call to Action',
     url: '#',
-    variant: 'primary',
+    variant: 'primary' as const,
   },
 }
 
 function generateSectionId(): string {
   return `section-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`
 }
+
+// ── Section item in the left panel ────────────────────────────────────────
 
 interface SectionItemProps {
   section: Section
@@ -63,8 +105,7 @@ function SectionItem({ section, index, total }: SectionItemProps) {
   const dispatch = useAppDispatch()
   const selectedSectionId = useAppSelector(s => s.ui.selectedSectionId)
   const isSelected = selectedSectionId === section.id
-  const label = SECTION_TYPE_LABELS[section.type] ?? section.type
-
+  const meta = SECTION_META[section.type]
   const [dragOver, setDragOver] = useState(false)
 
   function handleDragStart(e: React.DragEvent<HTMLDivElement>) {
@@ -76,10 +117,6 @@ function SectionItem({ section, index, total }: SectionItemProps) {
     e.preventDefault()
     e.dataTransfer.dropEffect = 'move'
     setDragOver(true)
-  }
-
-  function handleDragLeave() {
-    setDragOver(false)
   }
 
   function handleDrop(e: React.DragEvent<HTMLDivElement>) {
@@ -114,72 +151,55 @@ function SectionItem({ section, index, total }: SectionItemProps) {
       draggable
       onDragStart={handleDragStart}
       onDragOver={handleDragOver}
-      onDragLeave={handleDragLeave}
+      onDragLeave={() => setDragOver(false)}
       onDrop={handleDrop}
       className={[
-        'flex items-center gap-2 rounded-md border px-2 py-2 text-sm',
-        'transition-colors cursor-default',
+        'group flex items-center gap-2 rounded-lg border px-2 py-2.5 text-sm transition-all',
         isSelected
-          ? 'border-primary bg-primary/5'
-          : 'border-transparent hover:border-border hover:bg-muted/50',
-        dragOver ? 'border-primary/60 bg-primary/10' : '',
+          ? 'border-primary bg-primary/5 shadow-sm'
+          : 'border-border bg-background hover:border-primary/40 hover:shadow-sm',
+        dragOver ? 'border-primary bg-primary/10 scale-[1.01]' : '',
       ].join(' ')}
-      aria-current={isSelected ? 'true' : undefined}
     >
-      {/* Drag handle — decorative for mouse users */}
-      <span
-        className="text-muted-foreground cursor-grab active:cursor-grabbing shrink-0"
-        aria-hidden="true"
-      >
-        <GripVertical size={16} />
+      <span className="text-muted-foreground cursor-grab active:cursor-grabbing shrink-0" aria-hidden="true">
+        <GripVertical size={14} />
       </span>
 
-      {/* Section label button */}
+      {/* Color dot */}
+      {meta && (
+        <span className={`w-2 h-2 rounded-full shrink-0 ${meta.dot}`} aria-hidden="true" />
+      )}
+
       <button
         onClick={handleSelect}
-        className="flex-1 text-left font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded"
-        aria-label={`${isSelected ? 'Deselect' : 'Select'} ${label} section`}
+        className="flex-1 text-left font-medium text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded"
+        aria-label={`${isSelected ? 'Deselect' : 'Select'} ${meta?.label ?? section.type} section`}
       >
-        {label}
+        {meta?.label ?? section.type}
       </button>
 
-      {/* Keyboard-accessible reorder controls (WCAG 2.2 keyboard alternative) */}
-      <div className="flex items-center gap-0.5 shrink-0" role="group" aria-label={`Reorder ${label}`}>
-        <Button
-          variant="ghost"
-          size="icon"
-          className="h-6 w-6"
-          onClick={handleMoveUp}
-          disabled={index === 0}
-          aria-label={`Move ${label} up`}
-        >
-          <ChevronUp size={14} />
+      <div
+        className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity"
+        role="group"
+        aria-label={`Reorder ${meta?.label ?? section.type}`}
+      >
+        <Button variant="ghost" size="icon" className="h-6 w-6" onClick={handleMoveUp} disabled={index === 0} aria-label="Move up">
+          <ChevronUp size={12} />
         </Button>
-        <Button
-          variant="ghost"
-          size="icon"
-          className="h-6 w-6"
-          onClick={handleMoveDown}
-          disabled={index === total - 1}
-          aria-label={`Move ${label} down`}
-        >
-          <ChevronDown size={14} />
+        <Button variant="ghost" size="icon" className="h-6 w-6" onClick={handleMoveDown} disabled={index === total - 1} aria-label="Move down">
+          <ChevronDown size={12} />
         </Button>
-        <Button
-          variant="ghost"
-          size="icon"
-          className="h-6 w-6 text-destructive hover:text-destructive"
-          onClick={handleRemove}
-          aria-label={`Remove ${label} section`}
-        >
-          <Trash2 size={14} />
+        <Button variant="ghost" size="icon" className="h-6 w-6 text-destructive hover:text-destructive hover:bg-destructive/10" onClick={handleRemove} aria-label="Remove section">
+          <Trash2 size={12} />
         </Button>
       </div>
     </div>
   )
 }
 
-function AddSectionMenu() {
+// ── Add Section Dialog ─────────────────────────────────────────────────────
+
+function AddSectionDialog() {
   const dispatch = useAppDispatch()
   const [open, setOpen] = useState(false)
 
@@ -194,41 +214,117 @@ function AddSectionMenu() {
   }
 
   return (
-    <div className="relative">
+    <>
       <Button
         variant="outline"
         size="sm"
-        className="w-full gap-1"
-        onClick={() => setOpen(o => !o)}
-        aria-haspopup="menu"
-        aria-expanded={open}
-        aria-controls="add-section-menu"
+        className="w-full gap-1.5 border-dashed"
+        onClick={() => setOpen(true)}
+        aria-label="Add a new section"
       >
-        <Plus size={14} /> Add Section
+        <Plus size={14} />
+        Add Section
       </Button>
 
-      {open && (
-        <div
-          id="add-section-menu"
-          role="menu"
-          aria-label="Choose section type"
-          className="absolute bottom-full mb-1 left-0 right-0 rounded-md border bg-popover shadow-md z-10"
-        >
-          {SECTION_TYPES.map(type => (
-            <button
-              key={type}
-              role="menuitem"
-              onClick={() => handleAdd(type)}
-              className="w-full text-left px-3 py-2 text-sm hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset"
-            >
-              {SECTION_TYPE_LABELS[type]}
-            </button>
-          ))}
-        </div>
-      )}
-    </div>
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Add a Section</DialogTitle>
+            <DialogDescription>
+              Choose a section type to insert at the end of the page.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="grid grid-cols-2 gap-3 pt-2">
+            {SECTION_TYPES.map(type => {
+              const meta = SECTION_META[type]
+              const Icon = meta.Icon
+              return (
+                <button
+                  key={type}
+                  onClick={() => handleAdd(type)}
+                  className={[
+                    'flex flex-col items-start gap-2 rounded-lg border-2 p-4 text-left transition-all',
+                    'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+                    meta.color,
+                  ].join(' ')}
+                >
+                  <Icon size={20} className="text-foreground/70" />
+                  <div>
+                    <p className="font-semibold text-sm">{meta.label}</p>
+                    <p className="text-xs text-muted-foreground mt-0.5 leading-snug">
+                      {meta.description}
+                    </p>
+                  </div>
+                </button>
+              )
+            })}
+          </div>
+        </DialogContent>
+      </Dialog>
+    </>
   )
 }
+
+// ── Save Draft button ──────────────────────────────────────────────────────
+
+type SaveStatus = 'idle' | 'saving' | 'saved' | 'error'
+
+function SaveDraftButton({ slug }: { slug: string }) {
+  const draftPage = useAppSelector(s => s.draftPage.page)
+  const [status, setStatus] = useState<SaveStatus>('idle')
+
+  async function handleSave() {
+    if (!draftPage || status === 'saving') return
+    setStatus('saving')
+    try {
+      const res = await fetch(`/api/draft/${slug}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(draftPage),
+      })
+      setStatus(res.ok ? 'saved' : 'error')
+    } catch {
+      setStatus('error')
+    }
+    // Reset to idle after 3s so the button is ready again
+    setTimeout(() => setStatus('idle'), 3000)
+  }
+
+  const icons = {
+    idle: <Save size={14} />,
+    saving: <Save size={14} className="animate-pulse" />,
+    saved: <Check size={14} className="text-green-600" />,
+    error: <AlertCircle size={14} className="text-destructive" />,
+  }
+
+  const labels = {
+    idle: 'Save Draft',
+    saving: 'Saving…',
+    saved: 'Saved',
+    error: 'Failed',
+  }
+
+  return (
+    <Button
+      variant="outline"
+      size="sm"
+      onClick={handleSave}
+      disabled={status === 'saving'}
+      className={[
+        'gap-1.5 min-w-[100px]',
+        status === 'saved' ? 'border-green-400 text-green-700' : '',
+        status === 'error' ? 'border-destructive text-destructive' : '',
+      ].join(' ')}
+      aria-label={labels[status]}
+    >
+      {icons[status]}
+      {labels[status]}
+    </Button>
+  )
+}
+
+// ── Main studio layout ─────────────────────────────────────────────────────
 
 interface StudioLayoutProps {
   role: Role | null
@@ -243,7 +339,8 @@ export function StudioLayout({ role }: StudioLayoutProps) {
 
   if (!page) {
     return (
-      <div className="flex items-center justify-center h-screen text-muted-foreground">
+      <div className="flex items-center justify-center h-screen text-muted-foreground text-sm gap-2">
+        <Save size={16} className="animate-pulse" />
         Loading studio…
       </div>
     )
@@ -252,121 +349,91 @@ export function StudioLayout({ role }: StudioLayoutProps) {
   const knownTypes = new Set<string>(['hero', 'featureGrid', 'testimonial', 'cta'])
 
   return (
-    <div className="flex flex-col h-screen bg-background">
-      {/* ── Header / Toolbar ─────────────────────────────── */}
-      <header className="flex items-center justify-between border-b px-4 py-3 shrink-0">
-        <div className="flex items-center gap-3">
-          <h1 className="text-base font-semibold truncate max-w-xs">
-            Studio: {page.title}
-          </h1>
+    <div className="flex flex-col h-screen bg-muted/10">
+
+      {/* ── Toolbar ─────────────────────────────────────────────────────── */}
+      <header className="flex items-center justify-between border-b bg-background px-4 py-2.5 shrink-0 gap-4">
+        <div className="flex items-center gap-2 min-w-0">
+          <h1 className="text-sm font-semibold truncate">{page.title}</h1>
           {isDirty && (
-            <Badge variant="secondary" className="text-xs">
-              Unsaved
-            </Badge>
+            <Badge variant="secondary" className="text-xs shrink-0">Unsaved</Badge>
           )}
           {role && (
-            <Badge
-              variant="outline"
-              className="text-xs capitalize"
-              aria-label={`Your role: ${role}`}
-            >
+            <Badge variant="outline" className="text-xs capitalize shrink-0">
               {role}
             </Badge>
           )}
         </div>
 
-        <div className="flex items-center gap-2">
-          {/* Preview mode toggle */}
+        <div className="flex items-center gap-2 shrink-0">
+          {/* Preview toggle */}
           <div
             role="group"
             aria-label="Preview mode"
             className="flex items-center border rounded-md overflow-hidden"
           >
-            <button
-              onClick={() => dispatch(setPreviewMode('desktop'))}
-              aria-pressed={previewMode === 'desktop'}
-              aria-label="Desktop preview"
-              className={[
-                'px-2 py-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
-                previewMode === 'desktop'
-                  ? 'bg-primary text-primary-foreground'
-                  : 'hover:bg-muted',
-              ].join(' ')}
-            >
-              <Monitor size={16} aria-hidden="true" />
-            </button>
-            <button
-              onClick={() => dispatch(setPreviewMode('mobile'))}
-              aria-pressed={previewMode === 'mobile'}
-              aria-label="Mobile preview"
-              className={[
-                'px-2 py-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
-                previewMode === 'mobile'
-                  ? 'bg-primary text-primary-foreground'
-                  : 'hover:bg-muted',
-              ].join(' ')}
-            >
-              <Smartphone size={16} aria-hidden="true" />
-            </button>
+            {(['desktop', 'mobile'] as const).map(mode => (
+              <button
+                key={mode}
+                onClick={() => dispatch(setPreviewMode(mode))}
+                aria-pressed={previewMode === mode}
+                aria-label={`${mode} preview`}
+                className={[
+                  'px-2 py-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+                  previewMode === mode ? 'bg-primary text-primary-foreground' : 'hover:bg-muted',
+                ].join(' ')}
+              >
+                {mode === 'desktop' ? <Monitor size={15} aria-hidden="true" /> : <Smartphone size={15} aria-hidden="true" />}
+              </button>
+            ))}
           </div>
 
           <Separator orientation="vertical" className="h-6" />
+
+          <SaveDraftButton slug={page.slug} />
           <PublishButton slug={page.slug} role={role} />
         </div>
       </header>
 
-      {/* ── Main 3-panel layout ──────────────────────────── */}
+      {/* ── 3-panel body ────────────────────────────────────────────────── */}
       <div className="flex flex-1 overflow-hidden">
-        {/* Live region: announces section additions/removals to screen readers */}
-        <div
-          role="status"
-          aria-live="polite"
-          aria-atomic="true"
-          className="sr-only"
-        >
-          {sectionCount === 0
-            ? 'No sections'
-            : `${sectionCount} section${sectionCount === 1 ? '' : 's'}`}
+
+        {/* Screen-reader live region for section list changes */}
+        <div role="status" aria-live="polite" aria-atomic="true" className="sr-only">
+          {sectionCount === 0 ? 'No sections' : `${sectionCount} section${sectionCount === 1 ? '' : 's'}`}
         </div>
 
-        {/* Left — Section list */}
+        {/* Left — sections list */}
         <aside
           aria-label="Page sections"
-          className="w-64 shrink-0 border-r flex flex-col bg-muted/20 overflow-y-auto"
+          className="w-60 shrink-0 border-r flex flex-col bg-background overflow-hidden"
         >
-          <div className="p-3 border-b">
-            <h2 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+          <div className="px-3 py-2.5 border-b bg-muted/30">
+            <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
               Sections
-            </h2>
+            </p>
           </div>
 
-          <ul
-            role="list"
-            aria-label="Section list"
-            className="flex-1 p-2 grid gap-1"
-          >
+          <ul role="list" className="flex-1 p-2.5 grid gap-1.5 overflow-y-auto content-start">
             {page.sections.length === 0 && (
-              <li className="py-6 text-center text-sm text-muted-foreground">
+              <li className="py-10 text-center text-sm text-muted-foreground">
+                <Plus size={24} className="mx-auto mb-2 opacity-30" />
                 No sections yet.
               </li>
             )}
             {page.sections.map((section, index) => (
               <li key={section.id}>
-                <SectionItem
-                  section={section}
-                  index={index}
-                  total={page.sections.length}
-                />
+                <SectionItem section={section} index={index} total={page.sections.length} />
               </li>
             ))}
           </ul>
 
-          <div className="p-2 border-t">
-            <AddSectionMenu />
+          <div className="p-2.5 border-t bg-muted/20">
+            <AddSectionDialog />
           </div>
         </aside>
 
-        {/* Center — Live preview */}
+        {/* Center — live preview */}
         <main
           id="main-content"
           role="region"
@@ -375,13 +442,14 @@ export function StudioLayout({ role }: StudioLayoutProps) {
         >
           <div
             className={[
-              'transition-all mx-auto',
-              previewMode === 'mobile' ? 'max-w-[390px] border-x shadow-sm' : 'max-w-none',
+              'transition-all duration-200 mx-auto',
+              previewMode === 'mobile' ? 'max-w-[390px] border-x shadow-md' : 'max-w-none',
             ].join(' ')}
           >
             {page.sections.length === 0 && (
-              <div className="flex items-center justify-center h-64 text-muted-foreground text-sm">
-                Add sections from the panel on the left.
+              <div className="flex flex-col items-center justify-center h-64 text-muted-foreground text-sm gap-2">
+                <Grid2X2 size={32} className="opacity-20" />
+                <span>Add sections from the left panel to build your page.</span>
               </div>
             )}
             {page.sections.map(section => (
@@ -395,7 +463,7 @@ export function StudioLayout({ role }: StudioLayoutProps) {
           </div>
         </main>
 
-        {/* Right — Prop editor (visible when section selected) */}
+        {/* Right — prop editor */}
         <StudioPanel />
       </div>
     </div>

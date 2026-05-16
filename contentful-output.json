@@ -1,0 +1,526 @@
+[
+  {
+    "metadata": {
+      "tags": [],
+      "concepts": []
+    },
+    "sys": {
+      "space": {
+        "sys": {
+          "type": "Link",
+          "linkType": "Space",
+          "id": "z8gaacomfnc6"
+        }
+      },
+      "id": "3t7Iub6Arm23Cn7wWkIJTd",
+      "type": "Entry",
+      "createdAt": "2026-05-16T14:18:24.284Z",
+      "updatedAt": "2026-05-16T14:18:24.284Z",
+      "environment": {
+        "sys": {
+          "id": "master",
+          "type": "Link",
+          "linkType": "Environment"
+        }
+      },
+      "publishedVersion": 1,
+      "revision": 1,
+      "contentType": {
+        "sys": {
+          "type": "Link",
+          "linkType": "ContentType",
+          "id": "page"
+        }
+      },
+      "locale": "en-US"
+    },
+    "fields": {
+      "internalName": "Homepage",
+      "pageName": "The card you always wanted",
+      "slug": "home",
+      "topSection": [
+        {
+          "metadata": {
+            "tags": [],
+            "concepts": []
+          },
+          "sys": {
+            "space": {
+              "sys": {
+                "type": "Link",
+                "linkType": "Space",
+                "id": "z8gaacomfnc6"
+              }
+            },
+            "id": "54oaiSfiKIi2PQDm3ZPDf3",
+            "type": "Entry",
+            "createdAt": "2026-05-16T14:18:23.312Z",
+            "updatedAt": "2026-05-16T14:18:23.312Z",
+            "environment": {
+              "sys": {
+                "id": "master",
+                "type": "Link",
+                "linkType": "Environment"
+              }
+            },
+            "publishedVersion": 1,
+            "revision": 1,
+            "contentType": {
+              "sys": {
+                "type": "Link",
+                "linkType": "ContentType",
+                "id": "componentHeroBanner"
+              }
+            },
+            "locale": "en-US"
+          },
+          "fields": {
+            "internalName": "Modern Banking Hero (Default)",
+            "headline": "We wanted banking to be simple. So we rebuilt it from the ground up.",
+            "bodyText": {
+              "data": {},
+              "content": [
+                {
+                  "data": {},
+                  "content": [
+                    {
+                      "data": {},
+                      "marks": [],
+                      "value": "Coin cards offer great rates, personalized services, and exclusive perks helping you manage your money with confidence.",
+                      "nodeType": "text"
+                    }
+                  ],
+                  "nodeType": "paragraph"
+                }
+              ],
+              "nodeType": "document"
+            },
+            "image": {
+              "metadata": {
+                "tags": [],
+                "concepts": []
+              },
+              "sys": {
+                "space": {
+                  "sys": {
+                    "type": "Link",
+                    "linkType": "Space",
+                    "id": "z8gaacomfnc6"
+                  }
+                },
+                "id": "gJArMceFvS7Jd3pjvVfdO",
+                "type": "Asset",
+                "createdAt": "2026-05-16T14:18:00.260Z",
+                "updatedAt": "2026-05-16T14:18:00.260Z",
+                "environment": {
+                  "sys": {
+                    "id": "master",
+                    "type": "Link",
+                    "linkType": "Environment"
+                  }
+                },
+                "publishedVersion": 2,
+                "revision": 1,
+                "locale": "en-US"
+              },
+              "fields": {
+                "title": "A girl smiling, wearing a white t shirt and holding a phone",
+                "description": "",
+                "file": {
+                  "url": "//images.ctfassets.net/z8gaacomfnc6/gJArMceFvS7Jd3pjvVfdO/c4ef92e55d3937e97219a5509e46e56b/AdobeStockoriginal_507755457.jpg",
+                  "details": {
+                    "size": 1573885,
+                    "image": {
+                      "width": 8192,
+                      "height": 5464
+                    }
+                  },
+                  "fileName": "AdobeStockoriginal_507755457.jpg",
+                  "contentType": "image/jpeg"
+                }
+              }
+            },
+            "imageStyle": false,
+            "heroSize": true,
+            "colorPalette": "2. White Smoke (#FCFCFC)"
+          }
+        },
+        {
+          "metadata": {
+            "tags": [],
+            "concepts": []
+          },
+          "sys": {
+            "space": {
+              "sys": {
+                "type": "Link",
+                "linkType": "Space",
+                "id": "z8gaacomfnc6"
+              }
+            },
+            "id": "5hOYnlXbV9FFDfe1qwtNio",
+            "type": "Entry",
+            "createdAt": "2026-05-16T14:18:22.307Z",
+            "updatedAt": "2026-05-16T14:18:22.307Z",
+            "environment": {
+              "sys": {
+                "id": "master",
+                "type": "Link",
+                "linkType": "Environment"
+              }
+            },
+            "publishedVersion": 1,
+            "revision": 1,
+            "contentType": {
+              "sys": {
+                "type": "Link",
+                "linkType": "ContentType",
+                "id": "componentDuplex"
+              }
+            },
+            "locale": "en-US"
+          },
+          "fields": {
+            "internalName": "Black card / Banking for travelers",
+            "containerLayout": true,
+            "headline": "Discover a whole new world of travel",
+            "bodyText": {
+              "data": {},
+              "content": [
+                {
+                  "data": {},
+                  "content": [
+                    {
+                      "data": {},
+                      "marks": [],
+                      "value": "With free ATM withdrawals abroad and 24/7 customer service, Coin makes traveling the easiest it’s ever been. Upgrade your account and join the jet-set crowd.",
+                      "nodeType": "text"
+                    }
+                  ],
+                  "nodeType": "paragraph"
+                }
+              ],
+              "nodeType": "document"
+            },
+            "image": {
+              "metadata": {
+                "tags": [],
+                "concepts": []
+              },
+              "sys": {
+                "space": {
+                  "sys": {
+                    "type": "Link",
+                    "linkType": "Space",
+                    "id": "z8gaacomfnc6"
+                  }
+                },
+                "id": "55W3agcarLzsYSwJq6VTZ3",
+                "type": "Asset",
+                "createdAt": "2026-05-16T14:18:00.318Z",
+                "updatedAt": "2026-05-16T14:18:00.318Z",
+                "environment": {
+                  "sys": {
+                    "id": "master",
+                    "type": "Link",
+                    "linkType": "Environment"
+                  }
+                },
+                "publishedVersion": 2,
+                "revision": 1,
+                "locale": "en-US"
+              },
+              "fields": {
+                "title": "A Packed Travel Suitcase",
+                "description": "",
+                "file": {
+                  "url": "//images.ctfassets.net/z8gaacomfnc6/55W3agcarLzsYSwJq6VTZ3/5b4c6312d6fd50999795eacd0db6ea79/arnel-hasanovic-Nl-SXO4FAHw-unsplash__1_.jpg",
+                  "details": {
+                    "size": 1685492,
+                    "image": {
+                      "width": 7203,
+                      "height": 4807
+                    }
+                  },
+                  "fileName": "arnel-hasanovic-Nl-SXO4FAHw-unsplash (1).jpg",
+                  "contentType": "image/jpeg"
+                }
+              }
+            },
+            "imageStyle": true
+          }
+        },
+        {
+          "metadata": {
+            "tags": [],
+            "concepts": []
+          },
+          "sys": {
+            "space": {
+              "sys": {
+                "type": "Link",
+                "linkType": "Space",
+                "id": "z8gaacomfnc6"
+              }
+            },
+            "id": "350Vic01qnkh7C0IxFeVCD",
+            "type": "Entry",
+            "createdAt": "2026-05-16T14:18:23.275Z",
+            "updatedAt": "2026-05-16T14:18:23.275Z",
+            "environment": {
+              "sys": {
+                "id": "master",
+                "type": "Link",
+                "linkType": "Environment"
+              }
+            },
+            "publishedVersion": 1,
+            "revision": 1,
+            "contentType": {
+              "sys": {
+                "type": "Link",
+                "linkType": "ContentType",
+                "id": "componentDuplex"
+              }
+            },
+            "locale": "en-US"
+          },
+          "fields": {
+            "internalName": "General / Cashbacks",
+            "containerLayout": false,
+            "headline": "Earn cash back for every purchase",
+            "bodyText": {
+              "data": {},
+              "content": [
+                {
+                  "data": {},
+                  "content": [
+                    {
+                      "data": {},
+                      "marks": [],
+                      "value": "Get up to 3% of your cash back whenever you use the Coin card to pay for the purchases. There is no limit on rewards you can claim and no spending minimum to hit. Cash back rewards do not expire as long as your account is active. Certain restrictions apply.*\n",
+                      "nodeType": "text"
+                    }
+                  ],
+                  "nodeType": "paragraph"
+                }
+              ],
+              "nodeType": "document"
+            },
+            "image": {
+              "metadata": {
+                "tags": [],
+                "concepts": []
+              },
+              "sys": {
+                "space": {
+                  "sys": {
+                    "type": "Link",
+                    "linkType": "Space",
+                    "id": "z8gaacomfnc6"
+                  }
+                },
+                "id": "7uYHH1WkskqMXwCiWLgZof",
+                "type": "Asset",
+                "createdAt": "2026-05-16T14:18:00.241Z",
+                "updatedAt": "2026-05-16T14:18:00.241Z",
+                "environment": {
+                  "sys": {
+                    "id": "master",
+                    "type": "Link",
+                    "linkType": "Environment"
+                  }
+                },
+                "publishedVersion": 2,
+                "revision": 1,
+                "locale": "en-US"
+              },
+              "fields": {
+                "title": "A hand with yellow painted nails holding a clothing tag that says 50% off",
+                "description": "",
+                "file": {
+                  "url": "//images.ctfassets.net/z8gaacomfnc6/7uYHH1WkskqMXwCiWLgZof/34e0e5f057341de822720ccf03d11a67/artem-beliaikin-kTd2PvtqE_o-unsplash.jpg",
+                  "details": {
+                    "size": 1075600,
+                    "image": {
+                      "width": 6000,
+                      "height": 4000
+                    }
+                  },
+                  "fileName": "artem-beliaikin-kTd2PvtqE_o-unsplash.jpg",
+                  "contentType": "image/jpeg"
+                }
+              }
+            },
+            "imageStyle": true
+          }
+        }
+      ],
+      "extraSection": [
+        {
+          "metadata": {
+            "tags": [],
+            "concepts": []
+          },
+          "sys": {
+            "space": {
+              "sys": {
+                "type": "Link",
+                "linkType": "Space",
+                "id": "z8gaacomfnc6"
+              }
+            },
+            "id": "2fh7DboJhjWwcRmWfZnC5R",
+            "type": "Entry",
+            "createdAt": "2026-05-16T14:18:22.276Z",
+            "updatedAt": "2026-05-16T14:18:22.276Z",
+            "environment": {
+              "sys": {
+                "id": "master",
+                "type": "Link",
+                "linkType": "Environment"
+              }
+            },
+            "publishedVersion": 1,
+            "revision": 1,
+            "contentType": {
+              "sys": {
+                "type": "Link",
+                "linkType": "ContentType",
+                "id": "componentQuote"
+              }
+            },
+            "locale": "en-US"
+          },
+          "fields": {
+            "internalName": "Rich testimonial #6 / Customer service",
+            "quote": {
+              "data": {},
+              "content": [
+                {
+                  "data": {},
+                  "content": [
+                    {
+                      "data": {},
+                      "content": [
+                        {
+                          "data": {},
+                          "marks": [],
+                          "value": "I can't recommend Coin enough. If you’re tired of having to deal with unfriendly bank staff, long lines and ungodly opening hours, this is the bank for you.",
+                          "nodeType": "text"
+                        }
+                      ],
+                      "nodeType": "paragraph"
+                    }
+                  ],
+                  "nodeType": "blockquote"
+                },
+                {
+                  "data": {},
+                  "content": [
+                    {
+                      "data": {},
+                      "marks": [],
+                      "value": "—  ",
+                      "nodeType": "text"
+                    },
+                    {
+                      "data": {},
+                      "marks": [
+                        {
+                          "type": "bold"
+                        }
+                      ],
+                      "value": "Megan Trejo",
+                      "nodeType": "text"
+                    },
+                    {
+                      "data": {},
+                      "marks": [],
+                      "value": ", Madrid, Spain",
+                      "nodeType": "text"
+                    }
+                  ],
+                  "nodeType": "paragraph"
+                },
+                {
+                  "data": {},
+                  "content": [
+                    {
+                      "data": {},
+                      "marks": [],
+                      "value": "",
+                      "nodeType": "text"
+                    }
+                  ],
+                  "nodeType": "paragraph"
+                },
+                {
+                  "data": {},
+                  "content": [
+                    {
+                      "data": {},
+                      "marks": [],
+                      "value": "",
+                      "nodeType": "text"
+                    }
+                  ],
+                  "nodeType": "paragraph"
+                }
+              ],
+              "nodeType": "document"
+            },
+            "quoteAlignment": false,
+            "image": {
+              "metadata": {
+                "tags": [],
+                "concepts": []
+              },
+              "sys": {
+                "space": {
+                  "sys": {
+                    "type": "Link",
+                    "linkType": "Space",
+                    "id": "z8gaacomfnc6"
+                  }
+                },
+                "id": "3JECogfmlqLlXY93QJ2t2F",
+                "type": "Asset",
+                "createdAt": "2026-05-16T14:18:00.234Z",
+                "updatedAt": "2026-05-16T14:18:00.234Z",
+                "environment": {
+                  "sys": {
+                    "id": "master",
+                    "type": "Link",
+                    "linkType": "Environment"
+                  }
+                },
+                "publishedVersion": 2,
+                "revision": 1,
+                "locale": "en-US"
+              },
+              "fields": {
+                "title": "A woman wearing a blue shirt, blue jean and white sneakers walking in an office holding a laptop",
+                "description": "",
+                "file": {
+                  "url": "//images.ctfassets.net/z8gaacomfnc6/3JECogfmlqLlXY93QJ2t2F/a589fef1e3e58f65c6772b4dc2b17114/daria-pimkina-tYaccl19A3Q-unsplash.jpg",
+                  "details": {
+                    "size": 637204,
+                    "image": {
+                      "width": 2667,
+                      "height": 4000
+                    }
+                  },
+                  "fileName": "daria-pimkina-tYaccl19A3Q-unsplash.jpg",
+                  "contentType": "image/jpeg"
+                }
+              }
+            },
+            "imagePosition": true,
+            "colorPalette": "1. White (#FFFFFF)"
+          }
+        }
+      ]
+    }
+  }
+]

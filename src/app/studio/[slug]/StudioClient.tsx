@@ -3,7 +3,7 @@
 import { useEffect } from 'react'
 import { StoreProvider } from '@/store/StoreProvider'
 import { StudioLayout } from './StudioLayout'
-import { useAppDispatch, useAppSelector } from '@/store'
+import { useAppDispatch } from '@/store'
 import { loadPage } from '@/store/slices/draftPageSlice'
 import type { Page, Role } from '@/types/page'
 
@@ -20,18 +20,27 @@ export function StudioClient({ initialPage, role }: Props) {
   )
 }
 
-// Separate from StudioClient so it renders inside the StoreProvider and can
-// access the Redux store while still being a 'use client' component.
 function StudioInitializer({ initialPage, role }: Props) {
   const dispatch = useAppDispatch()
-  const currentSlug = useAppSelector(s => s.draftPage.page?.slug)
 
   useEffect(() => {
-    // Only overwrite if the persisted draft is for a different page.
-    // If slug matches, preserve the user's in-progress edits.
-    if (currentSlug !== initialPage.slug) {
+    async function init() {
+      // Try to load the server-side draft so editors and publishers share the same state.
+      try {
+        const res = await fetch(`/api/draft/${initialPage.slug}`)
+        if (res.ok) {
+          const draft = (await res.json()) as Page
+          dispatch(loadPage(draft))
+          return
+        }
+      } catch {
+        // Network error — fall through to Contentful page
+      }
+      // No server draft yet: load the Contentful source as the starting point
       dispatch(loadPage(initialPage))
     }
+    init()
+  // Re-run only if the slug changes (navigating between studio pages)
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initialPage.slug])
 
