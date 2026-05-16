@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { Suspense, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -12,7 +12,7 @@ import {
   CardHeader,
 } from '@/components/ui/card'
 
-export default function LoginPage() {
+function LoginForm() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const callbackUrl = searchParams.get('callbackUrl') ?? '/'
@@ -28,13 +28,9 @@ export default function LoginPage() {
     setLoading(true)
 
     try {
-      // Step 1: Fetch the CSRF token (NextAuth requires it for the credentials POST).
-      // The browser automatically stores the matching cookie — we just need the token value.
       const csrfRes = await fetch('/api/auth/csrf')
       const { csrfToken } = (await csrfRes.json()) as { csrfToken: string }
 
-      // Step 2: POST credentials. The browser sends the CSRF cookie automatically,
-      // and we include the matching token value in the body — that's all NextAuth needs.
       const res = await fetch('/api/auth/callback/credentials', {
         method: 'POST',
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
@@ -49,15 +45,12 @@ export default function LoginPage() {
 
       const data = (await res.json()) as { url?: string }
 
-      // NextAuth signals failure by returning a URL under /api/auth/ (e.g. /api/auth/error?…)
-      // A successful login returns the callbackUrl (e.g. http://localhost:3000/)
       if (!data.url || data.url.includes('/api/auth/')) {
         setError('Invalid email or password.')
         setLoading(false)
         return
       }
 
-      // Success — navigate to wherever the user was trying to go
       router.push(callbackUrl)
       router.refresh()
     } catch {
@@ -66,6 +59,53 @@ export default function LoginPage() {
     }
   }
 
+  return (
+    <form onSubmit={handleSubmit} noValidate>
+      <div className="grid gap-4">
+        <div className="grid gap-1.5">
+          <Label htmlFor="email">Email</Label>
+          <Input
+            id="email"
+            type="email"
+            autoComplete="email"
+            required
+            aria-required="true"
+            aria-describedby={error ? 'login-error' : undefined}
+            value={email}
+            onChange={e => setEmail(e.target.value)}
+            placeholder="you@example.com"
+          />
+        </div>
+
+        <div className="grid gap-1.5">
+          <Label htmlFor="password">Password</Label>
+          <Input
+            id="password"
+            type="password"
+            autoComplete="current-password"
+            required
+            aria-required="true"
+            aria-describedby={error ? 'login-error' : undefined}
+            value={password}
+            onChange={e => setPassword(e.target.value)}
+          />
+        </div>
+
+        {error && (
+          <p id="login-error" role="alert" className="text-sm text-destructive">
+            {error}
+          </p>
+        )}
+
+        <Button type="submit" disabled={loading} className="w-full">
+          {loading ? 'Signing in…' : 'Sign In'}
+        </Button>
+      </div>
+    </form>
+  )
+}
+
+export default function LoginPage() {
   return (
     <main
       className="flex min-h-screen items-center justify-center p-4 bg-muted/30"
@@ -79,52 +119,15 @@ export default function LoginPage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleSubmit} noValidate>
+          <Suspense fallback={
             <div className="grid gap-4">
-              <div className="grid gap-1.5">
-                <Label htmlFor="email">Email</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  autoComplete="email"
-                  required
-                  aria-required="true"
-                  aria-describedby={error ? 'login-error' : undefined}
-                  value={email}
-                  onChange={e => setEmail(e.target.value)}
-                  placeholder="you@example.com"
-                />
-              </div>
-
-              <div className="grid gap-1.5">
-                <Label htmlFor="password">Password</Label>
-                <Input
-                  id="password"
-                  type="password"
-                  autoComplete="current-password"
-                  required
-                  aria-required="true"
-                  aria-describedby={error ? 'login-error' : undefined}
-                  value={password}
-                  onChange={e => setPassword(e.target.value)}
-                />
-              </div>
-
-              {error && (
-                <p
-                  id="login-error"
-                  role="alert"
-                  className="text-sm text-destructive"
-                >
-                  {error}
-                </p>
-              )}
-
-              <Button type="submit" disabled={loading} className="w-full">
-                {loading ? 'Signing in…' : 'Sign In'}
-              </Button>
+              <div className="h-10 bg-muted rounded animate-pulse" />
+              <div className="h-10 bg-muted rounded animate-pulse" />
+              <div className="h-10 bg-muted rounded animate-pulse" />
             </div>
-          </form>
+          }>
+            <LoginForm />
+          </Suspense>
 
           <p className="mt-4 text-xs text-muted-foreground text-center">
             viewer@test.com · editor@test.com · publisher@test.com
