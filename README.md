@@ -308,10 +308,10 @@ npm run start
 
 | Area | Status | Reason |
 |---|---|---|
-| **FeatureGrid prop editing** | Read-only in studio | Editing an array-of-objects requires a full sub-form with add/remove per item. Left as a Contentful-only operation for scope reasons. |
-| **Real user database** | Hardcoded seed users | NextAuth Credentials + bcrypt is wired correctly; swapping the seed array for a DB query (Prisma, etc.) is a single-file change in `src/lib/auth/authOptions.ts`. |
-| **Undo / redo** | Not implemented | Redux state history (e.g. `redux-undo`) was excluded to keep the slice API clean; can be added as a middleware without touching the rest of the code. |
-| **Collaborative editing** | Not implemented | Would require a CRDT layer (Yjs, etc.) or server-sent events. Out of scope for this implementation. |
 | **Contentful webhook → preview invalidation** | Not implemented | On-demand revalidation (`revalidatePath`) requires a webhook secret and a dedicated route. The adapter and ISR config are ready to receive it. |
 | **E2E tests without Contentful** | Tests skip gracefully | Content-dependent tests check `CONTENTFUL_SPACE_ID` and call `test.skip()` when absent. Accessibility tests always run against whatever the page renders. |
-| **Snapshot storage** | Local filesystem | `releases/` is committed to git via `.gitkeep`. For production, replace the `fs` calls in `snapshotManager.ts` with S3, GCS, or Vercel Blob — the interface is the same. |
+| **Snapshot storage** | Vercel Blob in production | A `src/lib/storage.ts` abstraction switches automatically: filesystem locally (`.storage/`), Vercel Blob in production when `BLOB_READ_WRITE_TOKEN` is set. Add a Blob store in the Vercel dashboard to activate. |
+| **FeatureGrid inline editing** | Read-only in studio | Editing an array-of-objects requires a full sub-form with add/remove per item. Managed in Contentful directly. |
+| **Real user database** | Hardcoded seed users | NextAuth Credentials + bcrypt is wired correctly; swapping the seed array for a DB query is a single-file change in `src/lib/auth/authOptions.ts`. |
+| **Undo / redo** | Not implemented | `redux-undo` middleware can be added without changing existing slice API. |
+| **Collaborative editing** | Not implemented | Would require a CRDT layer (Yjs). Out of scope. |

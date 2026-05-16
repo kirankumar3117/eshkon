@@ -1,17 +1,25 @@
 /**
- * Storage abstraction — filesystem locally, Vercel Blob in production.
+ * Storage abstraction with three tiers:
+ *
+ *  1. BLOB_READ_WRITE_TOKEN set  → Vercel Blob  (persistent, shared across instances)
+ *  2. VERCEL env set, no token   → /tmp          (ephemeral fallback, never crashes)
+ *  3. Neither                    → .storage/     (local dev filesystem)
  *
  * All keys are slash-separated paths, e.g. "releases/home/1.0.0.json"
- * The same key works identically on both backends.
  */
 
 import fs from 'fs/promises'
 import path from 'path'
 
-const IS_VERCEL = Boolean(process.env.BLOB_READ_WRITE_TOKEN)
-const LOCAL_ROOT = path.join(process.cwd(), '.storage')
+const HAS_BLOB  = Boolean(process.env.BLOB_READ_WRITE_TOKEN)
+const ON_VERCEL = Boolean(process.env.VERCEL)
 
-// ── Filesystem backend (local dev) ────────────────────────────────────────
+// Local root: /tmp on Vercel (no Blob), .storage/ everywhere else
+const LOCAL_ROOT = ON_VERCEL && !HAS_BLOB
+  ? '/tmp/page-studio'
+  : path.join(process.cwd(), '.storage')
+
+// ── Filesystem backend ────────────────────────────────────────────────────
 
 async function fsRead(key: string): Promise<string | null> {
   try {
@@ -46,7 +54,7 @@ async function fsExists(key: string): Promise<boolean> {
   }
 }
 
-// ── Vercel Blob backend (production) ──────────────────────────────────────
+// ── Vercel Blob backend ───────────────────────────────────────────────────
 
 async function blobRead(key: string): Promise<string | null> {
   const { list } = await import('@vercel/blob')
@@ -78,8 +86,14 @@ async function blobExists(key: string): Promise<boolean> {
 // ── Public API ────────────────────────────────────────────────────────────
 
 export const storage = {
-  read: (key: string) => IS_VERCEL ? blobRead(key) : fsRead(key),
-  write: (key: string, data: string) => IS_VERCEL ? blobWrite(key, data) : fsWrite(key, data),
-  list: (prefix: string) => IS_VERCEL ? blobList(prefix) : fsList(prefix),
-  exists: (key: string) => IS_VERCEL ? blobExists(key) : fsExists(key),
+  read:   (key: string)               => HAS_BLOB ? blobRead(key)        : fsRead(key),
+  write:  (key: string, data: string) => HAS_BLOB ? blobWrite(key, data) : fsWrite(key, data),
+  list:   (prefix: string)            => HAS_BLOB ? blobList(prefix)     : fsList(prefix),
+  exists: (key: string)               => HAS_BLOB ? blobExists(key)      : fsExists(key),
+}
+
+// Log which backend is active (server-side only, visible in Vercel function logs)
+if (typeof window === 'undefined') {
+  const backend = HAS_BLOB ? 'Vercel Blob' : ON_VERCEL ? `/tmp (ephemeral)` : LOCAL_ROOT
+  console.log(`[storage] backend: ${backend}`)
 }

@@ -21,8 +21,11 @@ export default async function StudioPage({ params }: StudioPageProps) {
   let page
   let snapshotVersion: string | null = null
 
+  // Studio always fetches Contentful draft (preview) content so editors see
+  // unpublished Contentful changes. CONTENTFUL_PREVIEW=true enables the Preview API.
+  const usePreview = process.env.CONTENTFUL_PREVIEW === 'true'
   try {
-    page = await fetchPage(slug)
+    page = await fetchPage(slug, usePreview)
   } catch (err) {
     if (err instanceof PageValidationError) {
       return (
