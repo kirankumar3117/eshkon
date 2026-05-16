@@ -263,6 +263,15 @@ export function StudioLayout({ role }: StudioLayoutProps) {
               Unsaved
             </Badge>
           )}
+          {role && (
+            <Badge
+              variant="outline"
+              className="text-xs capitalize"
+              aria-label={`Your role: ${role}`}
+            >
+              {role}
+            </Badge>
+          )}
         </div>
 
         <div className="flex items-center gap-2">

@@ -1,25 +1,21 @@
+import { headers } from 'next/headers'
 import { notFound } from 'next/navigation'
 import { fetchPage } from '@/lib/contentful/contentfulAdapter'
 import { ContentfulError } from '@/lib/contentful/contentfulClient'
 import { PageValidationError } from '@/schemas/pageSchema'
+import { parseRole } from '@/lib/auth/roles'
 import { StudioClient } from './StudioClient'
-import type { Role } from '@/types/page'
 
 interface StudioPageProps {
   params: Promise<{ slug: string }>
 }
 
-// Role is injected by middleware via a header (wired up in Step 7).
-// Default to null when the header is absent (dev / pre-auth).
-function getRoleFromHeaders(): Role | null {
-  // Dynamic import avoids a "headers is not supported in static generation" error.
-  // The actual value is set by the middleware in Step 7.
-  return null
-}
-
 export default async function StudioPage({ params }: StudioPageProps) {
   const { slug } = await params
-  const role = getRoleFromHeaders()
+
+  // Role is injected by middleware via x-user-role header.
+  const headersList = await headers()
+  const role = parseRole(headersList.get('x-user-role'))
 
   let page
   try {
