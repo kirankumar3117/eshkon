@@ -58,8 +58,8 @@ test.describe('Viewer role', () => {
   test('viewer is redirected away from /studio', async ({ page }) => {
     await fillAndSubmit(page, 'viewer@test.com', 'viewer123')
     await page.goto('/studio/home')
-    // Middleware redirects viewer back to /login (viewer cannot edit)
-    await expect(page).toHaveURL(/\/login/)
+    // Middleware redirects viewer back to home (/) since they are authenticated but lack permissions
+    await expect(page).toHaveURL(process.env.PLAYWRIGHT_BASE_URL ?? 'http://localhost:3000/')
   })
 })
 
