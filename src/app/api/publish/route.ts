@@ -10,6 +10,7 @@ import {
   getLatestSnapshot,
 } from '@/lib/publish/snapshotManager'
 import { fetchPage } from '@/lib/contentful/contentfulAdapter'
+import { publishPageToContentful } from '@/lib/contentful/contentfulManagement'
 
 interface PublishRequestBody {
   slug: string
@@ -98,6 +99,15 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // Write back to Contentful (non-fatal — snapshot already saved)
+    if (process.env.CONTENTFUL_MANAGEMENT_TOKEN) {
+      try {
+        await publishPageToContentful(currentPage)
+      } catch (err) {
+        console.error('[publish] Contentful write-back failed:', err)
+      }
+    }
+
     return NextResponse.json({
       version: '1.0.0',
       changelog: ['Initial release'],
@@ -135,6 +145,15 @@ export async function POST(request: NextRequest) {
       { error: `Failed to save snapshot: ${(err as Error).message}` },
       { status: 500 }
     )
+  }
+
+  // Write back to Contentful (non-fatal — snapshot already saved)
+  if (process.env.CONTENTFUL_MANAGEMENT_TOKEN) {
+    try {
+      await publishPageToContentful(currentPage)
+    } catch (err) {
+      console.error('[publish] Contentful write-back failed:', err)
+    }
   }
 
   return NextResponse.json({
