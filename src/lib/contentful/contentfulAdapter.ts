@@ -101,9 +101,38 @@ function mapSection(raw: unknown, index: number): RawSectionFields {
   }
 
   return {
-    id: fields['internalName'] || sys.id || `section-${index}`,
-    type: type,
-    props: props,
+    id: (fields['internalName'] as string) || sys.id || `section-${index}`,
+    type,
+    props,
+  }
+}
+
+export class PageNotFoundError extends Error {
+  constructor(slug: string) {
+    super(`No page found in Contentful for slug: "${slug}"`)
+    this.name = 'PageNotFoundError'
+  }
+}
+
+export async function fetchAllPages(preview = false): Promise<Array<{ slug: string; title: string }>> {
+  try {
+    const client = getClient(preview)
+    const response = await client.getEntries({
+      content_type: 'page',
+      select: ['fields.slug', 'fields.title', 'fields.pageName', 'fields.internalName'],
+      limit: 100,
+    } as Parameters<typeof client.getEntries>[0])
+
+    return response.items
+      .map(entry => {
+        const f = entry.fields as Record<string, unknown>
+        const slug = f['slug'] as string | undefined
+        const title = (f['title'] || f['pageName'] || f['internalName'] || 'Untitled') as string
+        return slug ? { slug, title } : null
+      })
+      .filter((p): p is { slug: string; title: string } => p !== null)
+  } catch {
+    return []
   }
 }
 
@@ -127,7 +156,7 @@ export async function fetchPage(slug: string, preview = false): Promise<Page> {
   }
 
   if (response.items.length === 0) {
-    throw new ContentfulError(`No page found for slug: "${slug}"`)
+    throw new PageNotFoundError(slug)
   }
 
   const entry = response.items[0]
@@ -142,12 +171,18 @@ export async function fetchPage(slug: string, preview = false): Promise<Page> {
     if (Array.isArray(fields['extraSection'])) rawSections.push(...fields['extraSection'])
   }
 
-  // Each field is mapped explicitly; no spreading of raw entry data.
+  // Map sections, silently dropping any that resolve to 'unknown' type so
+  // a page with unsupported Contentful components still loads and renders —
+  // the preview uses <UnsupportedSection> for anything outside the registry.
+  const mappedSections = rawSections
+    .map(mapSection)
+    .filter(s => s.type !== 'unknown')
+
   const mappedPage = {
     pageId: (fields['pageId'] || fields['internalName'] || (entry as { sys?: { id?: string } }).sys?.id) as string,
     slug: fields['slug'],
     title: (fields['title'] || fields['pageName'] || 'Untitled Page') as string,
-    sections: rawSections.map(mapSection),
+    sections: mappedSections,
   }
 
   return validatePage(mappedPage)

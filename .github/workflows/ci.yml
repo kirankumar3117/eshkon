@@ -18,8 +18,9 @@ jobs:
       CONTENTFUL_ENVIRONMENT: master
       CONTENTFUL_PREVIEW: "false"
       TEST_SLUG: ${{ secrets.TEST_SLUG || 'home' }}
-      # NextAuth
-      NEXTAUTH_SECRET: ${{ secrets.NEXTAUTH_SECRET }}
+      # NextAuth — fallback keeps CI working when the repo secret isn't set.
+      # Never use this fallback value outside CI.
+      NEXTAUTH_SECRET: ${{ secrets.NEXTAUTH_SECRET || 'ci-only-insecure-secret-for-testing' }}
       NEXTAUTH_URL: http://localhost:3000
 
     steps:

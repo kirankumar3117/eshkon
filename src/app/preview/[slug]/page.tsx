@@ -1,8 +1,7 @@
 import { notFound } from 'next/navigation'
-import { fetchPage } from '@/lib/contentful/contentfulAdapter'
-import { validatePage, PageValidationError } from '@/schemas/pageSchema'
+import { fetchPage, PageNotFoundError } from '@/lib/contentful/contentfulAdapter'
+import { PageValidationError } from '@/schemas/pageSchema'
 import { SectionErrorBoundary } from '@/components/sections/SectionErrorBoundary'
-import { UnsupportedSection } from '@/components/sections/UnsupportedSection'
 import { renderSection } from '@/lib/registry/sectionRegistry'
 import type { Section } from '@/types/page'
 
@@ -10,59 +9,51 @@ interface PreviewPageProps {
   params: Promise<{ slug: string }>
 }
 
+function ErrorCard({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <main className="min-h-screen p-8" role="main">
+      <div role="alert" className="mx-auto max-w-2xl rounded-md border border-destructive/50 bg-destructive/10 p-6">
+        <h1 className="text-lg font-semibold text-destructive">{title}</h1>
+        <div className="mt-2 text-sm text-muted-foreground">{children}</div>
+      </div>
+    </main>
+  )
+}
+
 export default async function PreviewPage({ params }: PreviewPageProps) {
   const { slug } = await params
 
-  let rawPage: unknown
-  try {
-    rawPage = await fetchPage(slug)
-  } catch {
-    notFound()
-  }
-
   let page
   try {
-    page = validatePage(rawPage)
+    page = await fetchPage(slug)
   } catch (err) {
+    if (err instanceof PageNotFoundError) {
+      return (
+        <ErrorCard title="Page not found">
+          No page with slug <code className="font-mono bg-muted px-1 rounded">{slug}</code> exists
+          in Contentful. Create it there and come back.
+        </ErrorCard>
+      )
+    }
     if (err instanceof PageValidationError) {
       return (
-        <main className="min-h-screen p-8" role="main">
-          <div
-            role="alert"
-            className="mx-auto max-w-2xl rounded-md border border-destructive/50 bg-destructive/10 p-6"
-          >
-            <h1 className="text-lg font-semibold text-destructive">
-              Page data is invalid
-            </h1>
-            <p className="mt-2 text-sm text-muted-foreground">
-              The page could not be rendered because its data failed validation.
-            </p>
-          </div>
-        </main>
+        <ErrorCard title="Page data is invalid">
+          The page loaded from Contentful failed schema validation. Fix the content model and refresh.
+        </ErrorCard>
       )
     }
     notFound()
   }
 
-  const knownTypes = new Set(['hero', 'featureGrid', 'testimonial', 'cta'])
-
+  // page is typed as Page here — all sections already passed Zod validation in fetchPage
   return (
     <main id="main-content" role="main">
-      <h1 className="sr-only">{page.title}</h1>
-      {page.sections.map((section) => {
-        if (!knownTypes.has(section.type)) {
-          return (
-            <SectionErrorBoundary key={section.id} sectionId={section.id}>
-              <UnsupportedSection type={section.type} />
-            </SectionErrorBoundary>
-          )
-        }
-        return (
-          <SectionErrorBoundary key={section.id} sectionId={section.id}>
-            {renderSection(section as Section)}
-          </SectionErrorBoundary>
-        )
-      })}
+      <h1 className="sr-only">{page!.title}</h1>
+      {page!.sections.map((section) => (
+        <SectionErrorBoundary key={section.id} sectionId={section.id}>
+          {renderSection(section as Section)}
+        </SectionErrorBoundary>
+      ))}
     </main>
   )
 }

@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth/authOptions'
 import { parseRole } from '@/lib/auth/roles'
+import { fetchAllPages } from '@/lib/contentful/contentfulAdapter'
 import type { Role } from '@/types/page'
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -16,6 +17,7 @@ const ROLE_COLOUR: Record<Role, string> = {
 export default async function HomePage() {
   const session = await getServerSession(authOptions)
   const role = parseRole((session?.user as { role?: string } | undefined)?.role)
+  const pages = await fetchAllPages()
 
   return (
     <main id="main-content" className="min-h-screen bg-gradient-to-b from-muted/50 to-muted/20 flex flex-col">
@@ -63,29 +65,29 @@ export default async function HomePage() {
           </p>
         </div>
 
-        <PageLinks role={role} />
+        <PageLinks role={role} pages={pages} />
       </div>
     </main>
   )
 }
 
-function PageLinks({ role }: { role: Role | null }) {
-  const slugs = ['home', 'about-us', 'pricing', 'black-card', 'accessibility']
+function PageLinks({ role, pages }: { role: Role | null; pages: { slug: string; title: string }[] }) {
+  const items = pages.length > 0
+    ? pages
+    : ['home', 'about-us', 'pricing', 'black-card', 'accessibility'].map(s => ({ slug: s, title: s }))
 
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {slugs.map(slug => (
+        {items.map(({ slug, title }) => (
           <Card key={slug} className="group hover:shadow-md transition-all duration-300 border-muted/60 hover:border-primary/50 overflow-hidden flex flex-col">
             <CardHeader className="pb-4 bg-muted/30">
               <div className="flex justify-between items-start">
                 <div>
-                  <CardTitle className="text-xl flex items-center gap-2">
-                    <span className="text-muted-foreground font-normal">/</span>{slug}
-                  </CardTitle>
-                  <CardDescription className="mt-1">Landing Page</CardDescription>
+                  <CardTitle className="text-xl">{title}</CardTitle>
+                  <CardDescription className="mt-1 font-mono text-xs">/{slug}</CardDescription>
                 </div>
-                <Badge variant="outline" className="bg-background">Published</Badge>
+                <Badge variant="outline" className="bg-background">Page</Badge>
               </div>
             </CardHeader>
             <CardContent className="pt-6 flex-1">
@@ -100,6 +102,7 @@ function PageLinks({ role }: { role: Role | null }) {
               {(role === 'editor' || role === 'publisher') && (
                 <Button className="flex-1 shadow-sm transition-transform active:scale-95" asChild>
                   <Link href={`/studio/${slug}`}>Open Studio</Link>
+
                 </Button>
               )}
             </CardFooter>

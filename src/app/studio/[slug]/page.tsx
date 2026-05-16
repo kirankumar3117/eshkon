@@ -1,6 +1,6 @@
 import { headers } from 'next/headers'
 import { notFound } from 'next/navigation'
-import { fetchPage } from '@/lib/contentful/contentfulAdapter'
+import { fetchPage, PageNotFoundError } from '@/lib/contentful/contentfulAdapter'
 import { ContentfulError } from '@/lib/contentful/contentfulClient'
 import { PageValidationError } from '@/schemas/pageSchema'
 import { parseRole } from '@/lib/auth/roles'
@@ -40,6 +40,27 @@ export default async function StudioPage({ params }: StudioPageProps) {
       )
     }
 
+    if (err instanceof PageNotFoundError) {
+      return (
+        <main className="flex items-center justify-center min-h-screen p-8" role="main">
+          <div
+            role="alert"
+            className="mx-auto max-w-lg rounded-md border border-blue-200 bg-blue-50 p-6"
+          >
+            <h1 className="text-lg font-semibold text-blue-800">
+              Page not found in Contentful
+            </h1>
+            <p className="mt-2 text-sm text-blue-700">
+              No page with slug <code className="font-mono bg-blue-100 px-1 rounded">{slug}</code> exists in your Contentful space.
+            </p>
+            <p className="mt-2 text-xs text-blue-600">
+              Create a <strong>page</strong> entry in Contentful with <code className="font-mono">slug = &ldquo;{slug}&rdquo;</code> and then return here.
+            </p>
+          </div>
+        </main>
+      )
+    }
+
     if (err instanceof ContentfulError) {
       return (
         <main className="flex items-center justify-center min-h-screen p-8" role="main">
@@ -48,14 +69,13 @@ export default async function StudioPage({ params }: StudioPageProps) {
             className="mx-auto max-w-lg rounded-md border border-amber-300 bg-amber-50 p-6"
           >
             <h1 className="text-lg font-semibold text-amber-800">
-              Contentful not reachable
+              Contentful API error
             </h1>
             <p className="mt-2 text-sm text-amber-700">
               {(err as ContentfulError).message}
             </p>
             <p className="mt-2 text-xs text-amber-600">
-              Check your <code className="font-mono">CONTENTFUL_*</code> environment
-              variables and that the &ldquo;{slug}&rdquo; page exists in Contentful.
+              Check your <code className="font-mono">CONTENTFUL_*</code> environment variables.
             </p>
           </div>
         </main>
