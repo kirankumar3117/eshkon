@@ -100,11 +100,10 @@ export function PublishButton({ slug, role }: PublishButtonProps) {
       {status === 'success' && lastVersion && (
         <p
           role="status"
-          className="text-xs text-muted-foreground"
+          className="text-xs text-green-700 font-medium"
           aria-live="polite"
         >
           Published v{lastVersion}
-          {changelog ? ` — ${changelog}` : ''}
         </p>
       )}
 

@@ -1,0 +1,21 @@
+{
+  "version": "1.0.1",
+  "page": {
+    "pageId": "Pricing page",
+    "slug": "pricing",
+    "title": "Pricing",
+    "sections": [
+      {
+        "id": "section-1778948267195-6unp1",
+        "type": "hero",
+        "props": {
+          "heading": "let me check what needs to be updated",
+          "subheading": "the future is here",
+          "ctaLabel": "Let's Goo",
+          "ctaUrl": "https://google.com"
+        }
+      }
+    ]
+  },
+  "publishedAt": "2026-05-16T17:06:23.174Z"
+}

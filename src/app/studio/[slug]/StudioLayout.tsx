@@ -354,7 +354,7 @@ export function StudioLayout({ role }: StudioLayoutProps) {
       {/* ── Toolbar ─────────────────────────────────────────────────────── */}
       <header className="flex items-center justify-between border-b bg-background px-4 py-2.5 shrink-0 gap-4">
         <div className="flex items-center gap-2 min-w-0">
-          <h1 className="text-sm font-semibold truncate">{page.title}</h1>
+          <h1 className="text-sm font-semibold truncate">Studio: {page.title}</h1>
           {isDirty && (
             <Badge variant="secondary" className="text-xs shrink-0">Unsaved</Badge>
           )}
@@ -414,7 +414,7 @@ export function StudioLayout({ role }: StudioLayoutProps) {
             </p>
           </div>
 
-          <ul role="list" className="flex-1 p-2.5 grid gap-1.5 overflow-y-auto content-start">
+          <ul role="list" aria-label="Section list" className="flex-1 p-2.5 grid gap-1.5 overflow-y-auto content-start">
             {page.sections.length === 0 && (
               <li className="py-10 text-center text-sm text-muted-foreground">
                 <Plus size={24} className="mx-auto mb-2 opacity-30" />

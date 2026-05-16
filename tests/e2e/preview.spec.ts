@@ -52,4 +52,18 @@ test.describe('Preview page /preview/[slug]', () => {
 
     expect(consoleErrors).toHaveLength(0)
   })
+
+  test('CTA link is present and navigable', async ({ page }) => {
+    test.skip(!hasContentful, 'Contentful env vars not configured — skip content assertions')
+
+    await page.goto(`/preview/${TEST_SLUG}`)
+
+    // Find the first CTA anchor or button — hero and cta sections both render one
+    const cta = page.locator('a[href], button').filter({ hasText: /get started|learn more|sign up|cta|start/i }).first()
+    await expect(cta).toBeVisible()
+
+    // Verify it is keyboard-reachable (has a non-empty accessible name)
+    const name = await cta.getAttribute('aria-label') ?? await cta.textContent()
+    expect(name?.trim().length).toBeGreaterThan(0)
+  })
 })

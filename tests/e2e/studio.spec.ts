@@ -49,7 +49,7 @@ test.describe('Studio page /studio/[slug]', () => {
     await loginAs(page, 'editor@test.com', 'editor123')
     await page.goto(`/studio/${TEST_SLUG}`)
 
-    const publishBtn = page.getByRole('button', { name: /publish/i })
+    const publishBtn = page.getByRole('button', { name: /publishing requires publisher role/i })
     await expect(publishBtn).toBeDisabled()
   })
 
@@ -87,11 +87,11 @@ test.describe('Studio page /studio/[slug]', () => {
     const sectionList = page.locator('[aria-label="Section list"] li')
     const before = await sectionList.count()
 
-    // Open the Add Section menu
-    await page.getByRole('button', { name: /add section/i }).click()
+    // Open the Add Section dialog
+    await page.getByRole('button', { name: /add a new section/i }).click()
 
-    // Pick "Call to Action" from the menu
-    await page.getByRole('menuitem', { name: 'Call to Action' }).click()
+    // Pick "Call to Action" from the dialog
+    await page.getByRole('button', { name: 'Call to Action' }).click()
 
     // Section list should have one more item
     await expect(sectionList).toHaveCount(before + 1)
@@ -103,7 +103,7 @@ test.describe('Studio page /studio/[slug]', () => {
     await loginAs(page, 'publisher@test.com', 'publisher123')
     await page.goto(`/studio/${TEST_SLUG}`)
 
-    const publishBtn = page.getByRole('button', { name: /^Publish$/i })
+    const publishBtn = page.getByRole('button', { name: /^publish this page$/i })
     await expect(publishBtn).toBeEnabled()
   })
 })

@@ -15,6 +15,11 @@ export async function middleware(request: NextRequest) {
   // ── /studio/* — requires editor or publisher ────────────────────────────
   if (pathname.startsWith('/studio')) {
     if (!canAccessStudio(role)) {
+      // Authenticated but insufficient role (e.g. viewer) → send home, not to
+      // login, so they don't get caught in a redirect loop.
+      if (role !== null) {
+        return NextResponse.redirect(new URL('/', request.url))
+      }
       const loginUrl = new URL('/login', request.url)
       loginUrl.searchParams.set('callbackUrl', pathname)
       return NextResponse.redirect(loginUrl)
