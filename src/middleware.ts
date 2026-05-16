@@ -42,9 +42,20 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next()
   }
 
+  // ── /api/draft — requires editor or publisher ────────────────────────────
+  if (pathname.startsWith('/api/draft')) {
+    if (!canAccessStudio(role)) {
+      return NextResponse.json(
+        { error: 'Forbidden: editor or publisher role required.' },
+        { status: 403 }
+      )
+    }
+    return NextResponse.next()
+  }
+
   return NextResponse.next()
 }
 
 export const config = {
-  matcher: ['/studio/:path*', '/api/publish'],
+  matcher: ['/studio/:path*', '/api/publish', '/api/draft/:path*'],
 }

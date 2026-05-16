@@ -46,11 +46,19 @@ export async function POST(
     validatePage(body)
   } catch (err) {
     if (err instanceof PageValidationError) {
+      console.error('[draft POST] Validation failed:', err.message)
       return NextResponse.json({ error: err.message }, { status: 422 })
     }
+    console.error('[draft POST] Unknown validation error:', err)
     return NextResponse.json({ error: 'Invalid page data' }, { status: 422 })
   }
 
-  await storage.write(draftKey(slug), JSON.stringify(body, null, 2))
+  try {
+    await storage.write(draftKey(slug), JSON.stringify(body, null, 2))
+  } catch (err) {
+    console.error('[draft POST] Storage write failed:', err)
+    return NextResponse.json({ error: 'Failed to save draft' }, { status: 500 })
+  }
+
   return NextResponse.json({ ok: true, savedAt: new Date().toISOString() })
 }
