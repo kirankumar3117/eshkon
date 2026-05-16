@@ -339,9 +339,39 @@ export function StudioLayout({ role }: StudioLayoutProps) {
 
   if (!page) {
     return (
-      <div className="flex items-center justify-center h-screen text-muted-foreground text-sm gap-2">
-        <Save size={16} className="animate-pulse" />
-        Loading studio…
+      <div className="flex flex-col h-screen bg-muted/10 animate-pulse">
+        {/* Toolbar skeleton */}
+        <div className="flex items-center justify-between border-b bg-background px-4 py-2.5 shrink-0 gap-4">
+          <div className="h-4 w-40 rounded bg-muted" />
+          <div className="flex items-center gap-2">
+            <div className="h-8 w-16 rounded bg-muted" />
+            <div className="h-8 w-24 rounded bg-muted" />
+            <div className="h-8 w-20 rounded bg-muted" />
+          </div>
+        </div>
+        {/* 3-panel skeleton */}
+        <div className="flex flex-1 overflow-hidden">
+          {/* Left panel */}
+          <div className="w-60 shrink-0 border-r bg-background flex flex-col gap-2 p-3">
+            <div className="h-3 w-20 rounded bg-muted mb-2" />
+            {[1, 2, 3].map(i => (
+              <div key={i} className="h-10 rounded-lg bg-muted" />
+            ))}
+          </div>
+          {/* Center */}
+          <div className="flex-1 bg-white flex flex-col gap-4 p-8">
+            <div className="h-48 rounded-xl bg-muted" />
+            <div className="h-32 rounded-xl bg-muted" />
+            <div className="h-40 rounded-xl bg-muted" />
+          </div>
+          {/* Right panel */}
+          <div className="w-72 shrink-0 border-l bg-background flex flex-col gap-3 p-4">
+            <div className="h-3 w-24 rounded bg-muted mb-2" />
+            {[1, 2, 3, 4].map(i => (
+              <div key={i} className="h-8 rounded bg-muted" />
+            ))}
+          </div>
+        </div>
       </div>
     )
   }
@@ -349,7 +379,8 @@ export function StudioLayout({ role }: StudioLayoutProps) {
   const knownTypes = new Set<string>(['hero', 'featureGrid', 'testimonial', 'cta'])
 
   return (
-    <div className="flex flex-col h-screen bg-muted/10">
+    <div className="flex flex-col h-screen bg-muted/10" style={{ animation: 'studioFadeIn 0.25s ease-in' }}>
+      <style>{`@keyframes studioFadeIn { from { opacity: 0; } to { opacity: 1; } }`}</style>
 
       {/* ── Toolbar ─────────────────────────────────────────────────────── */}
       <header className="flex items-center justify-between border-b bg-background px-4 py-2.5 shrink-0 gap-4">
