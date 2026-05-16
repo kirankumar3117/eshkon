@@ -20,7 +20,6 @@ export function PublishButton({ slug, role }: PublishButtonProps) {
   const dispatch = useAppDispatch()
   const status = useAppSelector(s => s.publish.status)
   const lastVersion = useAppSelector(s => s.publish.lastVersion)
-  const changelog = useAppSelector(s => s.publish.changelog)
   const publishError = useAppSelector(s => s.publish.error)
   // Send the current draft page so the API publishes exactly what the user edited.
   const draftPage = useAppSelector(s => s.draftPage.page)
