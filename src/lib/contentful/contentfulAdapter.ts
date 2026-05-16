@@ -79,6 +79,38 @@ function mapSection(raw: unknown, index: number): RawSectionFields {
       ctaLabel: 'Learn More',
       ctaUrl: '/login',
     }
+  } else if (contentTypeId === 'topicBusinessInfo') {
+    type = 'hero'
+    const bodyNodes = (fields['body'] as { content?: RichTextNode[] })?.content || []
+    let subheading = (fields['shortDescription'] as string) || 'Click to edit subtitle'
+    for (const node of bodyNodes) {
+      if (node.nodeType === 'paragraph' && node.content?.[0]?.value) {
+        subheading = node.content[0].value
+        break
+      }
+    }
+    props = {
+      heading: (fields['name'] as string) || (fields['internalName'] as string) || 'Section',
+      subheading,
+      ctaLabel: 'Learn More',
+      ctaUrl: '#',
+    }
+  } else if (contentTypeId === 'componentInfoBlock') {
+    type = 'hero'
+    const bodyNodes = (fields['block1Body'] as { content?: RichTextNode[] })?.content || []
+    let subheading = 'Click to edit subtitle'
+    for (const node of bodyNodes) {
+      if (node.nodeType === 'paragraph' && node.content?.[0]?.value) {
+        subheading = node.content[0].value
+        break
+      }
+    }
+    props = {
+      heading: (fields['headline'] as string) || (fields['internalName'] as string) || 'Section',
+      subheading,
+      ctaLabel: 'Learn More',
+      ctaUrl: '#',
+    }
   } else if (contentTypeId === 'componentQuote') {
     type = 'testimonial'
     
@@ -169,6 +201,21 @@ export async function fetchPage(slug: string, preview = false): Promise<Page> {
   } else {
     if (Array.isArray(fields['topSection'])) rawSections.push(...fields['topSection'])
     if (Array.isArray(fields['extraSection'])) rawSections.push(...fields['extraSection'])
+  }
+
+  // Handle pageContent — either a sections container or a single section entry
+  if (rawSections.length === 0 && isResolvedEntry(fields['pageContent'])) {
+    const nested = (fields['pageContent'] as ResolvedEntry).fields
+    if (Array.isArray(nested['sections'])) {
+      rawSections = nested['sections']
+    } else if (Array.isArray(nested['topSection'])) {
+      rawSections = nested['topSection'] as unknown[]
+    } else if (Array.isArray(nested['extraSection'])) {
+      rawSections = nested['extraSection'] as unknown[]
+    } else {
+      // pageContent is itself the section (e.g. topicBusinessInfo)
+      rawSections = [fields['pageContent']]
+    }
   }
 
   // Map sections, silently dropping any that resolve to 'unknown' type so

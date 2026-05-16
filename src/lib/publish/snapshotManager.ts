@@ -1,26 +1,25 @@
-/**
- * Snapshot Manager — reads and writes immutable versioned releases via Contentful.
- *
- * Contentful content type "pageRelease":
- *   - slug        (Short text)
- *   - version     (Short text) — semver e.g. "1.0.0"
- *   - data        (JSON object) — full serialised Page
- *   - publishedAt (Short text) — ISO-8601 timestamp
- *
- * Snapshots are immutable: saveSnapshot throws if the version already exists.
- */
+import { promises as fs } from 'fs'
+import path from 'path'
 import semver from 'semver'
 import type { Page } from '@/types/page'
 import { validatePage } from '@/schemas/pageSchema'
-import { getManagementClient } from '@/lib/contentful/contentfulClient'
 
-const RELEASE_CONTENT_TYPE = 'pageRelease'
-const LOCALE = 'en-US'
+const RELEASES_DIR = process.env.VERCEL
+  ? '/tmp/releases'
+  : path.join(process.cwd(), 'releases')
 
 export interface Snapshot {
   version: string
   page: Page
   publishedAt: string
+}
+
+function slugDir(slug: string): string {
+  return path.join(RELEASES_DIR, slug)
+}
+
+function snapshotPath(slug: string, version: string): string {
+  return path.join(slugDir(slug), `${version}.json`)
 }
 
 function sortedStringify(value: unknown): string {
@@ -41,78 +40,63 @@ function isPageEqual(a: Page, b: Page): boolean {
   return sortedStringify(a) === sortedStringify(b)
 }
 
-async function getReleaseEntries(slug: string) {
-  const { client, spaceId, environmentId } = getManagementClient()
-  const result = await client.entry.getMany({
-    spaceId,
-    environmentId,
-    query: { content_type: RELEASE_CONTENT_TYPE, 'fields.slug': slug, limit: 1000 },
-  })
-  return { client, spaceId, environmentId, items: result.items }
-}
-
-/** Saves an immutable snapshot. Throws if the version already exists. */
 export async function saveSnapshot(slug: string, version: string, page: Page): Promise<void> {
-  const { client, spaceId, environmentId, items } = await getReleaseEntries(slug)
+  await fs.mkdir(slugDir(slug), { recursive: true })
 
-  const alreadyExists = items.some(
-    e => (e.fields.version as Record<string, string>)[LOCALE] === version
-  )
-  if (alreadyExists) {
-    throw new Error(`Snapshot v${version} for "${slug}" already exists and cannot be overwritten.`)
+  // Remove all previous snapshots for this slug — only the latest is kept.
+  try {
+    const existing = await fs.readdir(slugDir(slug))
+    await Promise.all(
+      existing
+        .filter(f => f.endsWith('.json'))
+        .map(f => fs.unlink(path.join(slugDir(slug), f)))
+    )
+  } catch {
+    // Directory may not exist yet — ignore
   }
 
-  await client.entry.create(
-    { spaceId, environmentId, contentTypeId: RELEASE_CONTENT_TYPE },
-    {
-      fields: {
-        slug: { [LOCALE]: slug },
-        version: { [LOCALE]: version },
-        data: { [LOCALE]: page },
-        publishedAt: { [LOCALE]: new Date().toISOString() },
-      },
-    }
-  )
+  const snapshot: Snapshot = { version, page, publishedAt: new Date().toISOString() }
+  await fs.writeFile(snapshotPath(slug, version), JSON.stringify(snapshot, null, 2), 'utf-8')
 }
 
-/** Returns the highest-semver snapshot for a slug, or null if none exist. */
 export async function getLatestSnapshot(slug: string): Promise<Snapshot | null> {
-  const { items } = await getReleaseEntries(slug)
-  if (items.length === 0) return null
+  let files: string[]
+  try {
+    files = await fs.readdir(slugDir(slug))
+  } catch {
+    return null
+  }
 
-  const versions = items
-    .map(e => (e.fields.version as Record<string, string>)[LOCALE])
+  const validVersions = files
+    .filter(f => f.endsWith('.json'))
+    .map(f => f.replace(/\.json$/, ''))
     .filter(v => semver.valid(v) !== null)
 
-  if (versions.length === 0) return null
+  if (validVersions.length === 0) return null
 
-  const latest = semver.maxSatisfying(versions, '*')
+  const latest = semver.maxSatisfying(validVersions, '*')
   if (!latest) return null
 
-  const entry = items.find(
-    e => (e.fields.version as Record<string, string>)[LOCALE] === latest
-  )!
-
-  return {
-    version: latest,
-    page: validatePage((entry.fields.data as Record<string, unknown>)[LOCALE]),
-    publishedAt: (entry.fields.publishedAt as Record<string, string>)[LOCALE],
-  }
+  const raw = await fs.readFile(snapshotPath(slug, latest), 'utf-8')
+  const data = JSON.parse(raw) as Snapshot
+  return { version: data.version, page: validatePage(data.page), publishedAt: data.publishedAt }
 }
 
-/**
- * Returns true when any existing snapshot for the slug has page content
- * identical to the provided page (key-order-stable deep comparison).
- */
 export async function snapshotExists(slug: string, page: Page): Promise<boolean> {
-  const { items } = await getReleaseEntries(slug)
+  let files: string[]
+  try {
+    files = await fs.readdir(slugDir(slug))
+  } catch {
+    return false
+  }
 
-  for (const entry of items) {
+  for (const file of files.filter(f => f.endsWith('.json'))) {
     try {
-      const stored = validatePage((entry.fields.data as Record<string, unknown>)[LOCALE])
-      if (isPageEqual(stored, page)) return true
+      const raw = await fs.readFile(path.join(slugDir(slug), file), 'utf-8')
+      const data = JSON.parse(raw) as Snapshot
+      if (isPageEqual(data.page, page)) return true
     } catch {
-      // skip corrupted entries
+      // skip corrupted files
     }
   }
 

@@ -17,6 +17,10 @@ a11y-report.json
 # production
 /build
 
+# runtime data (drafts and snapshots — stored in /tmp on Vercel)
+/drafts/
+/releases/
+
 # misc
 .DS_Store
 *.pem

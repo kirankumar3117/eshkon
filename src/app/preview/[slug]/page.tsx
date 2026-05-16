@@ -26,38 +26,32 @@ export default async function PreviewPage({ params }: PreviewPageProps) {
   let page: Page | undefined
   let snapshotVersion: string | null = null
 
-  // ── Step 1: try Contentful ────────────────────────────────────────────────
+  // ── Step 1: prefer the latest published snapshot ─────────────────────────
   try {
-    const fetched = await fetchPage(slug)
-    // Only accept the Contentful result when it has renderable sections.
-    // If all sections were unrecognised types the adapter returns [] which
-    // would produce a blank page — fall through to the snapshot in that case.
-    if (fetched.sections.length > 0) {
-      page = fetched
+    const snapshot = await getLatestSnapshot(slug)
+    if (snapshot) {
+      page = snapshot.page
+      snapshotVersion = snapshot.version
     }
-  } catch (err) {
-    // Schema error from Contentful data — show immediately, no fallback makes sense.
-    if (err instanceof PageValidationError) {
-      return (
-        <ErrorCard title="Page data is invalid">
-          The page loaded from Contentful failed schema validation. Fix the content model and refresh.
-        </ErrorCard>
-      )
-    }
-    // PageNotFoundError, ContentfulError (missing env vars), network errors —
-    // all fall through to the snapshot below.
+  } catch {
+    // Snapshot unreadable — fall through to Contentful.
   }
 
-  // ── Step 2: fall back to latest published snapshot ────────────────────────
+  // ── Step 2: fall back to Contentful if no snapshot exists ────────────────
   if (!page) {
     try {
-      const snapshot = await getLatestSnapshot(slug)
-      if (snapshot) {
-        page = snapshot.page
-        snapshotVersion = snapshot.version
+      const fetched = await fetchPage(slug)
+      if (fetched.sections.length > 0) {
+        page = fetched
       }
-    } catch {
-      // Snapshot unreadable — leave page undefined and show error below.
+    } catch (err) {
+      if (err instanceof PageValidationError) {
+        return (
+          <ErrorCard title="Page data is invalid">
+            The page loaded from Contentful failed schema validation. Fix the content model and refresh.
+          </ErrorCard>
+        )
+      }
     }
   }
 

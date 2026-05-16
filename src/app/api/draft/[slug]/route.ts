@@ -3,20 +3,10 @@ import type { NextRequest } from 'next/server'
 import { getToken } from 'next-auth/jwt'
 import { canAccessStudio, parseRole } from '@/lib/auth/roles'
 import { validatePage, PageValidationError } from '@/schemas/pageSchema'
-import { getManagementClient } from '@/lib/contentful/contentfulClient'
+import fs from 'fs/promises'
+import path from 'path'
 
-const DRAFT_CONTENT_TYPE = 'pageDraft'
-const LOCALE = 'en-US'
-
-async function findDraftEntry(slug: string) {
-  const { client, spaceId, environmentId } = getManagementClient()
-  const result = await client.entry.getMany({
-    spaceId,
-    environmentId,
-    query: { content_type: DRAFT_CONTENT_TYPE, 'fields.slug': slug, limit: 1 },
-  })
-  return result.items[0] ?? null
-}
+const DRAFTS_DIR = process.env.VERCEL ? '/tmp/drafts' : path.join(process.cwd(), 'drafts')
 
 export async function GET(
   request: NextRequest,
@@ -28,12 +18,12 @@ export async function GET(
   }
 
   const { slug } = await params
-  const entry = await findDraftEntry(slug)
-  if (!entry) {
+  try {
+    const content = await fs.readFile(path.join(DRAFTS_DIR, `${slug}.json`), 'utf-8')
+    return NextResponse.json(JSON.parse(content) as unknown)
+  } catch {
     return NextResponse.json({ error: 'No draft found' }, { status: 404 })
   }
-
-  return NextResponse.json(entry.fields.data[LOCALE] as unknown)
 }
 
 export async function POST(
@@ -46,7 +36,6 @@ export async function POST(
   }
 
   const { slug } = await params
-
   let body: unknown
   try {
     body = await request.json()
@@ -63,26 +52,11 @@ export async function POST(
     return NextResponse.json({ error: 'Invalid page data' }, { status: 422 })
   }
 
-  const { client, spaceId, environmentId } = getManagementClient()
-  const existing = await findDraftEntry(slug)
-
-  if (existing) {
-    await client.entry.update(
-      { spaceId, environmentId, entryId: existing.sys.id },
-      {
-        sys: existing.sys,
-        fields: {
-          slug: { [LOCALE]: slug },
-          data: { [LOCALE]: body },
-        },
-      }
-    )
-  } else {
-    await client.entry.create(
-      { spaceId, environmentId, contentTypeId: DRAFT_CONTENT_TYPE },
-      { fields: { slug: { [LOCALE]: slug }, data: { [LOCALE]: body } } }
-    )
-  }
-
+  await fs.mkdir(DRAFTS_DIR, { recursive: true })
+  await fs.writeFile(
+    path.join(DRAFTS_DIR, `${slug}.json`),
+    JSON.stringify(body, null, 2),
+    'utf-8'
+  )
   return NextResponse.json({ ok: true, savedAt: new Date().toISOString() })
 }

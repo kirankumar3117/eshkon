@@ -77,7 +77,15 @@ export async function POST(request: NextRequest) {
   }
 
   // ── Load previous snapshot ───────────────────────────────────────────────
-  const latest = await getLatestSnapshot(slug)
+  let latest
+  try {
+    latest = await getLatestSnapshot(slug)
+  } catch (err) {
+    return NextResponse.json(
+      { error: `Failed to load snapshots: ${(err as Error).message}` },
+      { status: 500 }
+    )
+  }
 
   // ── First publish: no previous snapshot ─────────────────────────────────
   if (!latest) {
