@@ -22,13 +22,7 @@ export default async function StudioPage({ params }: StudioPageProps) {
   let snapshotVersion: string | null = null
 
   try {
-    const fetched = await fetchPage(slug)
-    // Only use Contentful data when it has renderable sections.
-    // If all sections were unrecognised types the adapter returns [] —
-    // fall through to the snapshot fallback in that case.
-    if (fetched.sections.length > 0) {
-      page = fetched
-    }
+    page = await fetchPage(slug)
   } catch (err) {
     if (err instanceof PageValidationError) {
       return (

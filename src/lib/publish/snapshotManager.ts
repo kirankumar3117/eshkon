@@ -43,20 +43,17 @@ function isPageEqual(a: Page, b: Page): boolean {
 export async function saveSnapshot(slug: string, version: string, page: Page): Promise<void> {
   await fs.mkdir(slugDir(slug), { recursive: true })
 
-  // Remove all previous snapshots for this slug — only the latest is kept.
+  // Each version is written once and never overwritten — immutable releases.
+  const dest = snapshotPath(slug, version)
   try {
-    const existing = await fs.readdir(slugDir(slug))
-    await Promise.all(
-      existing
-        .filter(f => f.endsWith('.json'))
-        .map(f => fs.unlink(path.join(slugDir(slug), f)))
-    )
-  } catch {
-    // Directory may not exist yet — ignore
+    await fs.access(dest)
+    throw new Error(`Snapshot ${version} already exists for slug "${slug}"`)
+  } catch (err) {
+    if ((err as NodeJS.ErrnoException).code !== 'ENOENT') throw err
   }
 
   const snapshot: Snapshot = { version, page, publishedAt: new Date().toISOString() }
-  await fs.writeFile(snapshotPath(slug, version), JSON.stringify(snapshot, null, 2), 'utf-8')
+  await fs.writeFile(dest, JSON.stringify(snapshot, null, 2), 'utf-8')
 }
 
 export async function getLatestSnapshot(slug: string): Promise<Snapshot | null> {

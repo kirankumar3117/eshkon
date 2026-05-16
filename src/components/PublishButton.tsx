@@ -24,11 +24,11 @@ export function PublishButton({ slug, role }: PublishButtonProps) {
   // Send the current draft page so the API publishes exactly what the user edited.
   const draftPage = useAppSelector(s => s.draftPage.page)
 
-  const canPublish = role === 'publisher'
+  const canPublish = role === 'publisher' && draftPage !== null
   const isPublishing = status === 'publishing'
 
   async function handlePublish() {
-    if (!canPublish) return
+    if (!canPublish || !draftPage) return
     dispatch(startPublish())
 
     try {
@@ -71,9 +71,11 @@ export function PublishButton({ slug, role }: PublishButtonProps) {
       aria-label={
         isPublishing
           ? 'Publishing…'
-          : canPublish
-            ? 'Publish this page'
-            : 'Publishing requires publisher role'
+          : !draftPage
+            ? 'Page not loaded yet'
+            : canPublish
+              ? 'Publish this page'
+              : 'Publishing requires publisher role'
       }
       className="min-w-[100px]"
     >

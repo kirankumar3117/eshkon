@@ -5,6 +5,7 @@ import { StoreProvider } from '@/store/StoreProvider'
 import { StudioLayout } from './StudioLayout'
 import { useAppDispatch } from '@/store'
 import { loadPage } from '@/store/slices/draftPageSlice'
+import { validatePage } from '@/schemas/pageSchema'
 import type { Page, Role } from '@/types/page'
 
 interface Props {
@@ -29,12 +30,13 @@ function StudioInitializer({ initialPage, role }: Props) {
       try {
         const res = await fetch(`/api/draft/${initialPage.slug}`)
         if (res.ok) {
-          const draft = (await res.json()) as Page
+          const raw = await res.json()
+          const draft = validatePage(raw) // reject corrupt drafts before they reach Redux
           dispatch(loadPage(draft))
           return
         }
       } catch {
-        // Network error — fall through to Contentful page
+        // Draft missing, invalid, or network error — fall through to Contentful page
       }
       // No server draft yet: load the Contentful source as the starting point
       dispatch(loadPage(initialPage))
