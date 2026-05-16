@@ -11,23 +11,13 @@ import {
 } from '@/lib/publish/snapshotManager'
 import { fetchPage } from '@/lib/contentful/contentfulAdapter'
 import { publishPageToContentful } from '@/lib/contentful/contentfulManagement'
-import fs from 'fs/promises'
-import path from 'path'
+import { storage } from '@/lib/storage'
 
-const DRAFTS_DIR = process.env.VERCEL
-  ? '/tmp/drafts'
-  : path.join(process.cwd(), 'drafts')
-
-// After publish, overwrite the draft file so the studio always reopens
+// After publish, overwrite the draft so the studio always reopens
 // with exactly what was published — keeps draft and snapshot in sync.
 async function syncDraftToPublished(slug: string, page: import('@/types/page').Page) {
   try {
-    await fs.mkdir(DRAFTS_DIR, { recursive: true })
-    await fs.writeFile(
-      path.join(DRAFTS_DIR, `${slug}.json`),
-      JSON.stringify(page, null, 2),
-      'utf-8'
-    )
+    await storage.write(`drafts/${slug}.json`, JSON.stringify(page, null, 2))
   } catch {
     // non-fatal — studio can still load from snapshot
   }

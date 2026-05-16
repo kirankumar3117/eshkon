@@ -1,12 +1,8 @@
-import { promises as fs } from 'fs'
 import path from 'path'
 import semver from 'semver'
 import type { Page } from '@/types/page'
 import { validatePage } from '@/schemas/pageSchema'
-
-const RELEASES_DIR = process.env.VERCEL
-  ? '/tmp/releases'
-  : path.join(process.cwd(), 'releases')
+import { storage } from '@/lib/storage'
 
 export interface Snapshot {
   version: string
@@ -14,12 +10,12 @@ export interface Snapshot {
   publishedAt: string
 }
 
-function slugDir(slug: string): string {
-  return path.join(RELEASES_DIR, slug)
+function snapshotKey(slug: string, version: string): string {
+  return `releases/${slug}/${version}.json`
 }
 
-function snapshotPath(slug: string, version: string): string {
-  return path.join(slugDir(slug), `${version}.json`)
+function snapshotPrefix(slug: string): string {
+  return `releases/${slug}`
 }
 
 function sortedStringify(value: unknown): string {
@@ -41,32 +37,22 @@ function isPageEqual(a: Page, b: Page): boolean {
 }
 
 export async function saveSnapshot(slug: string, version: string, page: Page): Promise<void> {
-  await fs.mkdir(slugDir(slug), { recursive: true })
+  const key = snapshotKey(slug, version)
 
-  // Each version is written once and never overwritten — immutable releases.
-  const dest = snapshotPath(slug, version)
-  try {
-    await fs.access(dest)
+  // Each version is written once — immutable releases
+  if (await storage.exists(key)) {
     throw new Error(`Snapshot ${version} already exists for slug "${slug}"`)
-  } catch (err) {
-    if ((err as NodeJS.ErrnoException).code !== 'ENOENT') throw err
   }
 
   const snapshot: Snapshot = { version, page, publishedAt: new Date().toISOString() }
-  await fs.writeFile(dest, JSON.stringify(snapshot, null, 2), 'utf-8')
+  await storage.write(key, JSON.stringify(snapshot, null, 2))
 }
 
 export async function getLatestSnapshot(slug: string): Promise<Snapshot | null> {
-  let files: string[]
-  try {
-    files = await fs.readdir(slugDir(slug))
-  } catch {
-    return null
-  }
+  const keys = await storage.list(snapshotPrefix(slug))
 
-  const validVersions = files
-    .filter(f => f.endsWith('.json'))
-    .map(f => f.replace(/\.json$/, ''))
+  const validVersions = keys
+    .map(k => path.basename(k).replace(/\.json$/, ''))
     .filter(v => semver.valid(v) !== null)
 
   if (validVersions.length === 0) return null
@@ -74,28 +60,31 @@ export async function getLatestSnapshot(slug: string): Promise<Snapshot | null> 
   const latest = semver.maxSatisfying(validVersions, '*')
   if (!latest) return null
 
-  const raw = await fs.readFile(snapshotPath(slug, latest), 'utf-8')
-  const data = JSON.parse(raw) as Snapshot
-  return { version: data.version, page: validatePage(data.page), publishedAt: data.publishedAt }
+  const raw = await storage.read(snapshotKey(slug, latest))
+  if (!raw) return null
+
+  try {
+    const data = JSON.parse(raw) as Snapshot
+    return { version: data.version, page: validatePage(data.page), publishedAt: data.publishedAt }
+  } catch {
+    return null
+  }
 }
 
 export async function snapshotExists(slug: string, page: Page): Promise<boolean> {
-  let files: string[]
-  try {
-    files = await fs.readdir(slugDir(slug))
-  } catch {
-    return false
-  }
+  const keys = await storage.list(snapshotPrefix(slug))
 
-  for (const file of files.filter(f => f.endsWith('.json'))) {
+  for (const key of keys) {
     try {
-      const raw = await fs.readFile(path.join(slugDir(slug), file), 'utf-8')
+      const raw = await storage.read(key)
+      if (!raw) continue
       const data = JSON.parse(raw) as Snapshot
       if (isPageEqual(data.page, page)) return true
     } catch {
-      // skip corrupted files
+      // skip corrupted entries
     }
   }
 
   return false
 }
+

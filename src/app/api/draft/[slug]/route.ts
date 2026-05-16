@@ -3,10 +3,11 @@ import type { NextRequest } from 'next/server'
 import { getToken } from 'next-auth/jwt'
 import { canAccessStudio, parseRole } from '@/lib/auth/roles'
 import { validatePage, PageValidationError } from '@/schemas/pageSchema'
-import fs from 'fs/promises'
-import path from 'path'
+import { storage } from '@/lib/storage'
 
-const DRAFTS_DIR = process.env.VERCEL ? '/tmp/drafts' : path.join(process.cwd(), 'drafts')
+function draftKey(slug: string): string {
+  return `drafts/${slug}.json`
+}
 
 export async function GET(
   request: NextRequest,
@@ -18,12 +19,10 @@ export async function GET(
   }
 
   const { slug } = await params
-  try {
-    const content = await fs.readFile(path.join(DRAFTS_DIR, `${slug}.json`), 'utf-8')
-    return NextResponse.json(JSON.parse(content) as unknown)
-  } catch {
-    return NextResponse.json({ error: 'No draft found' }, { status: 404 })
-  }
+  const content = await storage.read(draftKey(slug))
+  if (!content) return NextResponse.json({ error: 'No draft found' }, { status: 404 })
+
+  return NextResponse.json(JSON.parse(content) as unknown)
 }
 
 export async function POST(
@@ -52,11 +51,6 @@ export async function POST(
     return NextResponse.json({ error: 'Invalid page data' }, { status: 422 })
   }
 
-  await fs.mkdir(DRAFTS_DIR, { recursive: true })
-  await fs.writeFile(
-    path.join(DRAFTS_DIR, `${slug}.json`),
-    JSON.stringify(body, null, 2),
-    'utf-8'
-  )
+  await storage.write(draftKey(slug), JSON.stringify(body, null, 2))
   return NextResponse.json({ ok: true, savedAt: new Date().toISOString() })
 }
